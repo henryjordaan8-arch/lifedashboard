@@ -234,6 +234,15 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
             "highlights": [e for e in ahead if (e["category"] == "training" and e.get("key_reason")) or e["is_call"]],
         }
 
+    @app.get("/api/events")
+    def events(start: str, end: str, category: str | None = None) -> dict[str, Any]:
+        """Calendar events with start <= day <= end, optionally one category (e.g. study)."""
+        s, e = _day(start), _day(end)
+        if (e - s).days > 120:
+            raise HTTPException(400, "range too long (max 120 days)")
+        evs = events_between(s, e + timedelta(days=1)) if (cfg.demo_mode or calendar_sources(cfg)) else []
+        return {"events": [x for x in evs if not category or x["category"] == category]}
+
     @app.get("/api/day")
     def day_view(day: str | None = Query(None, alias="date")) -> dict[str, Any]:
         d = _day(day)

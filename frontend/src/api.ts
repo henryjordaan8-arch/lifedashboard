@@ -56,6 +56,10 @@ export const api = {
   readiness: () => get<Readiness>("/api/readiness"),
   sport: (name: SportKey, days: number) => get<SportData>(`/api/sport/${name}?days=${days}`),
   day: (date: string) => get<DayPlan>(`/api/day?date=${date}`),
+  events: (start: string, end: string, category?: string) =>
+    get<{ events: CalEvent[] }>(`/api/events?start=${start}&end=${end}${category ? `&category=${category}` : ""}`).then(
+      (r) => r.events,
+    ),
   keySessions: (days: number) => get<{ events: CalEvent[] }>(`/api/key-sessions?days=${days}`).then((r) => r.events),
   week: (date: string) => get<Week>(`/api/week?date=${date}`),
   tick: (week_start: string, goal_id: string, done: boolean) =>

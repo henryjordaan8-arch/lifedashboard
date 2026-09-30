@@ -103,3 +103,32 @@ export function mmss(seconds: number | null | undefined): string {
 export function shortDate(day: string, withYear = false): string {
   return parseDay(day).toLocaleDateString(undefined, { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
 }
+
+/** Emoji shown in place of the sport / area name on compact calendar chips. */
+export const KIND_EMOJI: Record<Sport | "study", string> = {
+  run: "🏃",
+  ride: "🚴",
+  swim: "🏊",
+  strength: "🏋️",
+  study: "📚",
+  other: "⚡",
+};
+
+const KIND_WORDS: Record<Sport | "study", RegExp> = {
+  run: /\b(runs?|running|jog(ging)?)\b/gi,
+  ride: /\b(rides?|riding|cycling|cycle|bike|biking)\b/gi,
+  swim: /\b(swims?|swimming)\b/gi,
+  strength: /\b(gym|strength( training)?|weights)\b/gi,
+  study: /\b(study|studying)\b/gi,
+  other: /$^/g,
+};
+
+/** "Long run 14 km" -> "Long 14 km", "Gym: push" -> "push": the emoji says the rest. */
+export function compactTitle(title: string, kind: Sport | "study"): string {
+  const out = title
+    .replace(KIND_WORDS[kind], " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s:·—–|-]+|[\s:·—–|-]+$/g, "")
+    .trim();
+  return out || title;
+}

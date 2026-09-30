@@ -50,6 +50,11 @@ def test_demo_end_to_end(tmp_path):
         assert day["configured"] and cats <= {"training", "work", "study", "reading", "personal", "other"}
         assert set(day["hours"]) == {"training", "work", "study", "reading", "personal", "other"}
 
+        wk_start = (today - timedelta(days=today.weekday() + 7)).isoformat()
+        study = c.get(f"/api/events?start={wk_start}&end={today.isoformat()}&category=study").json()["events"]
+        assert study and {e["category"] for e in study} == {"study"}
+        assert c.get("/api/events?start=2026-01-01&end=2026-12-31").status_code == 400
+
         keys = c.get("/api/key-sessions?days=21").json()["events"]
         assert keys and all(e["key_reason"] for e in keys)
 

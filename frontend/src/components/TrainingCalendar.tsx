@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
-import { addDays, clock, duration, isoDay, km, pace, parseDay, SPORT_LABEL } from "../format";
+import { addDays, clock, compactTitle, duration, isoDay, KIND_EMOJI, km, pace, parseDay, SPORT_LABEL } from "../format";
 import type { Activity, CalEvent, Sport } from "../types";
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -27,9 +27,11 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[];
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [study, setStudy] = useState<CalEvent[]>([]);
   const [selected, setSelected] = useState<Activity | null>(null);
   const days = useMemo(() => monthGrid(month), [month]);
   const todayIso = isoDay(new Date());
+  const nowIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
   useEffect(() => {
     let live = true;
@@ -37,6 +39,10 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[];
       .activities(isoDay(days[0]), isoDay(days[days.length - 1]))
       .then((a) => live && setActivities(a))
       .catch(() => live && setActivities([]));
+    api
+      .events(isoDay(days[0]), isoDay(days[days.length - 1]), "study")
+      .then((e) => live && setStudy(e))
+      .catch(() => live && setStudy([]));
     return () => {
       live = false;
     };
@@ -47,6 +53,12 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[];
     for (const a of activities) m.set(a.date, [...(m.get(a.date) ?? []), a]);
     return m;
   }, [activities]);
+
+  const studyByDay = useMemo(() => {
+    const m = new Map<string, CalEvent[]>();
+    for (const e of study) m.set(e.start.slice(0, 10), [...(m.get(e.start.slice(0, 10)) ?? []), e]);
+    return m;
+  }, [study]);
 
   const plannedByDay = useMemo(() => {
     const m = new Map<string, CalEvent[]>();
@@ -88,8 +100,10 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[];
         <div className="sport-sum">
           {bySport.map((x) => (
             <span key={x.sport}>
-              <span className="sw" style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, marginRight: 6, verticalAlign: -1, background: `var(--sport-${x.sport})` }} />
-              {SPORT_LABEL[x.sport]} <b className="tnum">{duration(x.secs)}</b>
+              <span className="emo" role="img" aria-label={SPORT_LABEL[x.sport]} title={SPORT_LABEL[x.sport]}>
+                {KIND_EMOJI[x.sport]}
+              </span>{" "}
+              <b className="tnum">{duration(x.secs)}</b>
             </span>
           ))}
         </div>
@@ -114,15 +128,33 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[];
                   title={`${a.name} · ${duration(a.duration_s)}`}
                 >
                   <span className="bar" style={{ background: `var(--sport-${a.sport})` }} />
-                  <span className="lbl">{a.name}</span>
-                  <span className="meta tnum">{shortMeta(a)}</span>
+                  <span className="emo" aria-label={SPORT_LABEL[a.sport]}>{KIND_EMOJI[a.sport]}</span>
+                  <span className="lbl">
+                    {compactTitle(a.name, a.sport)} <span className="meta tnum">{shortMeta(a)}</span>
+                  </span>
                 </button>
               ))}
               {plans.map((p) => (
                 <div key={p.id} className="chip planned" title={`Planned: ${p.title}`}>
                   <span className="bar" style={{ background: `var(--sport-${p.sport ?? "other"})` }} />
-                  <span className="lbl">{p.title}</span>
-                  {!p.all_day && <span className="meta tnum">{clock(p.start)}</span>}
+                  <span className="emo" aria-label={SPORT_LABEL[p.sport ?? "other"]}>{KIND_EMOJI[p.sport ?? "other"]}</span>
+                  <span className="lbl">
+                    {compactTitle(p.title, p.sport ?? "other")}{" "}
+                    {!p.all_day && <span className="meta tnum">{clock(p.start)}</span>}
+                  </span>
+                </div>
+              ))}
+              {(studyByDay.get(iso) ?? []).map((e) => (
+                <div
+                  key={e.id}
+                  className={`chip study ${iso >= todayIso && e.end > nowIso ? "planned" : ""}`}
+                  title={`${e.title} · ${clock(e.start)}–${clock(e.end)}`}
+                >
+                  <span className="bar" style={{ background: "var(--cat-study)" }} />
+                  <span className="emo" aria-label="Study">{KIND_EMOJI.study}</span>
+                  <span className="lbl">
+                    {compactTitle(e.title, "study")} {!e.all_day && <span className="meta tnum">{clock(e.start)}</span>}
+                  </span>
                 </div>
               ))}
             </div>

@@ -144,6 +144,17 @@ export async function staticGet(path: string, init?: RequestInit): Promise<unkno
       const end = q.get("end") ?? "";
       return { activities: bundle.activities.filter((a) => a.date >= start && a.date <= end) };
     }
+    case "/api/events": {
+      const start = q.get("start") ?? "";
+      const end = q.get("end") ?? "";
+      const cat = q.get("category");
+      const seen = new Set<string>();
+      const events = Object.values(bundle.days)
+        .flatMap((d) => d.events)
+        .filter((e) => e.source !== "routine" && e.start.slice(0, 10) >= start && e.start.slice(0, 10) <= end)
+        .filter((e) => (!cat || e.category === cat) && !seen.has(e.id) && seen.add(e.id));
+      return { events };
+    }
     case "/api/day": {
       const d = q.get("date") ?? bundle.today;
       return bundle.days[d] ?? emptyDay(d);

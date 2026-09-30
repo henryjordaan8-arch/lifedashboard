@@ -505,3 +505,16 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .marker > span { position: absolute; right: 0; top: -10px; white-space: nowrap; font-size: 11px; font-weight: 600; color: var(--ink-2);
   background: var(--surface); padding: 1px 8px; border: 1px solid var(--border); border-radius: 999px; }
 .up-kind { color: var(--ink-2); font-weight: 600; margin-right: 6px; }
+
+/* emoji type markers on calendar chips */
+.chip .emo { flex: none; font-size: 12px; line-height: 1; }
+.chip.study:not(.planned) { background: color-mix(in srgb, var(--cat-study) 10%, var(--surface-2)); }
+.sport-sum .emo { font-size: 14px; }
+
+/* calendar chips: the emoji identifies the type, so drop the colour stripe and
+   let names use two lines instead of being cut off */
+.cal .chip { align-items: flex-start; gap: 4px; padding: 4px 5px; }
+.cal .chip .bar { display: none; }
+.cal .chip .lbl { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; word-break: normal; overflow-wrap: break-word; }
+.cal .chip .meta { font-size: 10.5px; margin-left: 2px; white-space: nowrap; }
+.cal .chip .emo { line-height: 1.35; }

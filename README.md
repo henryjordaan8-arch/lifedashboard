@@ -22,7 +22,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 - **Key sessions ahead**: your quality sessions for the next 3 weeks: tempo, threshold, VO₂ max and interval runs, and structured bike sessions (sweet spot, FTP, over-unders, or reps like `3×12min`). Base sessions (easy, long, Z2, endurance, recovery), swims and gym are never key. Put a ★ in any event title to mark it by hand, or add title words with `KEY_SESSION_KEYWORDS`.
 - **This week**: a checklist that ticks itself from Garmin and calendar data. Goals live in `backend/goals.json`; see below.
 
-**Running / Cycling / Swimming** tabs, one dashboard per sport. Pick a range (3M · 6M · 1Y · 2Y):
+**Running / Cycling / Swimming** tabs, one dashboard per sport. Pick a range (3M · 6M · 1Y · 2Y · 5Y):
 
 - **Headline numbers** for the range compared with the previous one: sessions, distance, time and key sessions, plus pace for running, power and speed for cycling, and pace and SWOLF for swimming. Performance changes are green or red; volume changes stay neutral, since doing less can be a deliberate taper.
 - **Weekly volume** as distance, time or training load.
@@ -36,7 +36,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 - **Intensity**: time in heart-rate zones Z1–Z5, and the key vs base session split.
 - **Sessions table**, sortable by any column, with ★ on key sessions.
 
-Activity history is synced for `ACTIVITY_BACKFILL_DAYS`, 2 years by default. It's a single request, so it's cheap. Metrics that need a particular sensor (power meter, running dynamics, pool swim) only appear when Garmin has them.
+Activity history is synced for `ACTIVITY_BACKFILL_DAYS`, 5 years by default. Activities come in a few ranged requests, so it's cheap. If you raise the setting later, the next sync fetches the older history too. Metrics that need a particular sensor (power meter, running dynamics, pool swim) only appear when Garmin has them.
 
 ## Readiness score (v2)
 
@@ -103,7 +103,7 @@ The first start installs everything, which takes a minute or two. After that it 
 
 ## Connecting your accounts
 
-1. **Garmin**: run the login step above. It asks for your Garmin email, password and, if you use it, a two-factor code, then saves a login token in `~/.garminconnect`. Your password isn't stored. The first sync pulls 90 days of sleep and health data plus 2 years of activities, which takes 5–10 minutes; the dashboard fills in as it goes. After that it syncs every hour, or when you click **Sync now**.
+1. **Garmin**: run the login step above. It asks for your Garmin email, password and, if you use it, a two-factor code, then saves a login token in `~/.garminconnect`. Your password isn't stored. The first sync pulls 90 days of sleep and health data plus 5 years of activities, which takes 5–10 minutes; the dashboard fills in as it goes. After that it syncs every hour, or when you click **Sync now**.
 2. **Google Calendar**: the first start creates `backend/.env`; open it in any text editor. For each calendar, go to Google Calendar → ⚙️ **Settings** → the calendar under *Settings for my calendars* → **Integrate calendar**, and copy the **Secret address in iCal format**. Keep these addresses private.
    - If everything is in one calendar, use `GCAL_ICS_URLS=`. Events are categorised by title: sport words → training, "lecture/study/exam…" → study, "meeting/stand-up/work…" → work, "read/book…" → reading, "lunch/groceries/friends…" → personal. Add your own words with the `*_KEYWORDS` settings.
    - If an area has its own calendar, use `GCAL_TRAINING_ICS_URLS`, `GCAL_WORK_ICS_URLS`, `GCAL_STUDY_ICS_URLS`, `GCAL_READING_ICS_URLS` or `GCAL_PERSONAL_ICS_URLS`. Every event in it gets that category.

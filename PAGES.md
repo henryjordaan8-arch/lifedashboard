@@ -65,7 +65,7 @@ Same page, **Variables** tab → **New repository variable**:
 ### 5. Run it
 
 Go to **Actions → Publish dashboard → Run workflow**. The first run takes 5–10 minutes
-because it pulls 90 days of health data and 2 years of activities. After that it runs
+because it pulls 90 days of health data and 5 years of activities. After that it runs
 every hour by itself, and whenever you push a change.
 
 ### 6. Open it

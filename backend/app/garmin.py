@@ -137,19 +137,32 @@ def sync(
             counts[kind] += 1
             time.sleep(REQUEST_PAUSE_S)
 
-    # Activities: one ranged call covers the whole window.
-    since = store.get_meta("activities_synced_until")
-    act_start = today - timedelta(days=max(backfill_days, activity_backfill_days or 0))
-    if since:
-        act_start = max(act_start, date.fromisoformat(since) - timedelta(days=REFRESH_RECENT_DAYS))
-    items = client.get_activities_by_date(act_start.isoformat(), today.isoformat()) or []
-    store.put_activities(
-        (int(a["activityId"]), str(a.get("startTimeLocal", ""))[:10], a)
-        for a in items
-        if a.get("activityId") is not None
-    )
-    counts["activities"] = len(items)
+    # Activities: ranged calls. Normally just the last few days; on the first sync the
+    # whole window, and if the window was made longer since (e.g. 2 -> 5 years), the
+    # older stretch that hasn't been fetched yet.
+    want_from = today - timedelta(days=max(backfill_days, activity_backfill_days or 0))
+    until = store.get_meta("activities_synced_until")
+    have_from = store.get_meta("activities_synced_from")
+    ranges: list[tuple[date, date]] = []
+    if not until:
+        ranges.append((want_from, today))
+    else:
+        ranges.append((date.fromisoformat(until) - timedelta(days=REFRESH_RECENT_DAYS), today))
+        oldest = date.fromisoformat(have_from) if have_from else date.fromisoformat(until)
+        if want_from < oldest:
+            ranges.append((want_from, oldest))
+    counts["activities"] = 0
+    for start_d, end_d in ranges:
+        items = client.get_activities_by_date(start_d.isoformat(), end_d.isoformat()) or []
+        store.put_activities(
+            (int(a["activityId"]), str(a.get("startTimeLocal", ""))[:10], a)
+            for a in items
+            if a.get("activityId") is not None
+        )
+        counts["activities"] += len(items)
     store.set_meta("activities_synced_until", today.isoformat())
+    oldest_have = date.fromisoformat(have_from) if have_from else today
+    store.set_meta("activities_synced_from", min(want_from, oldest_have).isoformat())
 
     # Lap splits for recent runs and rides (stored under kind "splits", keyed by activity id).
     from .normalize import activity as normalize_activity

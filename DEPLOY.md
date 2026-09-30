@@ -70,7 +70,7 @@ Click **Deploy** (Railway also redeploys by itself when variables change).
 ## 5. Open it
 
 Go to your domain from step 2 and sign in with your password. The first
-sync pulls 90 days of health data and 2 years of activities, which takes
+sync pulls 90 days of health data and 5 years of activities, which takes
 5–10 minutes; the dashboard fills in as it goes. After that it syncs every hour.
 You stay signed in for 90 days on each device.
 

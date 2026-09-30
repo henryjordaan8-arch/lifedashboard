@@ -21,7 +21,7 @@ from typing import Any
 from .config import Settings
 
 PBKDF2_ITERATIONS = 600_000  # OWASP 2023 recommendation for PBKDF2-SHA256
-SPORT_RANGES = (91, 182, 365, 730)
+SPORT_RANGES = (91, 182, 365, 730, 1826)
 DAYS_BACK, DAYS_AHEAD = 30, 21
 
 # Endpoints the dashboard requests with fixed arguments (must match frontend/src/*.tsx).

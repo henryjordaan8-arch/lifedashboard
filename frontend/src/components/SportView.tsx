@@ -10,6 +10,7 @@ const RANGES = [
   { label: "6M", days: 182 },
   { label: "1Y", days: 365 },
   { label: "2Y", days: 730 },
+  { label: "5Y", days: 1826 },
 ];
 
 interface Kpi {

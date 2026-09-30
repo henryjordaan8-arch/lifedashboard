@@ -53,9 +53,9 @@ class Settings:
     )
     demo_mode: bool = field(default_factory=lambda: _bool("DEMO_MODE"))
     backfill_days: int = field(default_factory=lambda: int(os.getenv("BACKFILL_DAYS", "90")))
-    # Activities are one cheap ranged request, so pull much more history for the sport tabs.
+    # Activities come in cheap ranged requests, so pull much more history for the sport tabs.
     activity_backfill_days: int = field(
-        default_factory=lambda: int(os.getenv("ACTIVITY_BACKFILL_DAYS", "730"))
+        default_factory=lambda: int(os.getenv("ACTIVITY_BACKFILL_DAYS", "1826"))  # 5 years
     )
     sync_interval_minutes: int = field(
         default_factory=lambda: int(os.getenv("SYNC_INTERVAL_MINUTES", "60"))

@@ -6,3 +6,4 @@ icalendar>=6.0
 recurring-ical-events>=3.3
 python-dotenv>=1.0
 pytest>=8.0
+cryptography>=42

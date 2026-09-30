@@ -1,9 +1,16 @@
+import { isUnlocked, resume, STATIC, staticGet, unlock } from "./static";
 import type { Activity, CalEvent, DayPlan, Readiness, SleepNight, SportData, SportKey, Status, Week } from "./types";
 
 /** Fired when the server says the login has expired, so the app can show the login screen. */
 export const AUTH_EVENT = "lifedashboard:login-required";
 
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
+  if (STATIC) {
+    if (!isUnlocked() && path !== "/api/session" && path !== "/api/logout") {
+      window.dispatchEvent(new Event(AUTH_EVENT));
+    }
+    return staticGet(path, init) as Promise<T>;
+  }
   const res = await fetch(path, { credentials: "same-origin", ...init });
   if (res.status === 401) {
     window.dispatchEvent(new Event(AUTH_EVENT));
@@ -21,10 +28,14 @@ const post = <T>(path: string, body?: unknown) =>
   });
 
 export const api = {
-  session: () => get<{ auth_required: boolean; logged_in: boolean }>("/api/session"),
+  session: async () => {
+    if (STATIC && !isUnlocked()) await resume(); // a remembered device signs in silently
+    return get<{ auth_required: boolean; logged_in: boolean }>("/api/session");
+  },
   logout: () => post<{ logged_in: boolean }>("/api/logout"),
   /** Returns an error message, or null on success. */
   login: async (password: string): Promise<string | null> => {
+    if (STATIC) return unlock(password);
     const res = await fetch("/api/login", {
       method: "POST",
       credentials: "same-origin",

@@ -82,9 +82,11 @@ The first start installs everything, which takes a minute or two. After that it 
 
 ## Open it from any device
 
-To use the dashboard from your phone, tablet or another computer, host it online
-behind a password. **[DEPLOY.md](DEPLOY.md)** walks through it step by step. It takes
-about 15 minutes and costs around $5/month on Railway.
+- **Free:** **[PAGES.md](PAGES.md)** sets up GitHub Pages. GitHub syncs your data every hour,
+  encrypts it with your password and publishes it, and your browser decrypts it. About
+  10 minutes to set up, and costs nothing.
+- **Live server, about $5/month:** **[DEPLOY.md](DEPLOY.md)** covers Railway or any Docker host. Data is
+  always up to date and **Sync now** works instantly.
 
 ## Connecting your accounts
 

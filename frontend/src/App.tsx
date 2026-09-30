@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
+import { STATIC } from "./static";
 import { ReadinessCard } from "./components/ReadinessCard";
 import { SportView } from "./components/SportView";
 import { TodayView } from "./components/TodayView";
@@ -102,8 +103,13 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
             <span className="dot" />
             {pillText}
           </span>
-          <button className="btn" onClick={syncNow} disabled={status?.syncing}>
-            {status?.syncing ? "Syncing…" : "Sync now"}
+          <button
+            className="btn"
+            onClick={syncNow}
+            disabled={status?.syncing}
+            title={STATIC ? "Data is re-synced every hour; this loads the latest update" : undefined}
+          >
+            {status?.syncing ? "Syncing…" : STATIC ? "Refresh" : "Sync now"}
           </button>
           {onSignOut && (
             <button className="btn ghost" onClick={onSignOut} title="Sign out">

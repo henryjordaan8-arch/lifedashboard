@@ -147,10 +147,14 @@ def events(
     key_keywords: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    for category, url in sources:
+    for n, (category, url) in enumerate(sources, 1):
         try:
             out.extend(parse_events(_fetch(url), start, end, category, extra_keywords, key_keywords))
         except Exception as exc:  # noqa: BLE001 - one broken feed shouldn't hide the rest
-            log.warning("calendar feed failed: %s", exc)
+            # Never log the URL or the exception text (which can contain it): the secret
+            # iCal address is as good as a password, and CI logs may be public.
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            log.warning("calendar feed %d (%s) failed: %s%s", n, category or "mixed",
+                        type(exc).__name__, f" HTTP {status}" if status else "")
     out.sort(key=lambda x: x["start"])
     return out

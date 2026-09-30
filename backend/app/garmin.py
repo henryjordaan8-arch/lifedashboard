@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import logging
+import os
 import time
 from datetime import date, timedelta
 from pathlib import Path
@@ -72,11 +73,11 @@ def connect(settings: Settings, prompt_mfa: Callable[[], str] | None = None):
         client.login(settings.garmin_tokenstore)
     except Exception as exc:  # noqa: BLE001 - surface any login failure the same way
         if not (settings.garmin_email and settings.garmin_password):
-            if settings.require_password:  # hosted
+            if settings.require_password or os.getenv("GITHUB_ACTIONS"):  # hosted
                 raise GarminNotConfigured(
                     "Garmin login missing or expired. On your computer run `python3 start.py --login`, "
-                    "then `python3 start.py --garmin-token`, paste the output into GARMIN_TOKENS "
-                    "on your host and redeploy."
+                    "then `python3 start.py --garmin-token`, and paste the output into GARMIN_TOKENS "
+                    "(GitHub: Settings → Secrets and variables → Actions), then run the workflow again."
                 ) from exc
             raise GarminNotConfigured(
                 "Not logged in to Garmin yet. Run `python3 start.py --login` "

@@ -20,6 +20,9 @@ from .store import Store
 
 log = logging.getLogger("lifedashboard")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+# httpx logs every request URL at INFO, and the secret calendar URLs must never reach a log.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 class Login(BaseModel):

@@ -14,3 +14,6 @@ backend/data/
 node_modules/
 frontend/dist/
 *.tsbuildinfo
+
+# Encrypted snapshot is built by CI, never committed
+frontend/public/data.enc

@@ -116,7 +116,7 @@ def trends(sport: str, sessions: list[dict]) -> list[dict[str, Any]]:
     out = []
     for key, (label, unit, direction) in TREND_METRICS[sport].items():
         points = [
-            {"date": s["date"], "value": round(s["metrics"][key], 3), "name": s["name"], "key": s["key"]}
+            {"date": s["date"], "value": round(s["metrics"][key], 3), "name": s["name"], "key": s["key"], "id": s["id"]}
             for s in sessions if s["metrics"].get(key) is not None
         ]
         if len(points) < 2:

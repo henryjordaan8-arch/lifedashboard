@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
-import { duration, mmss, shortDate } from "../format";
+import { addDays, duration, mmss, parseDay, shortDate, SPORT_LABEL } from "../format";
 import type { SportBest, SportData, SportKey, SportSession, SportSummary } from "../types";
+import { ChartModal, ExpandButton } from "./ChartModal";
 import { TrendChart, type TrendPoint } from "./TrendChart";
 import { WeeklyVolumeChart } from "./WeeklyVolumeChart";
 
@@ -305,7 +306,101 @@ function SessionsTable({ sessions, columns }: { sessions: SportSession[]; column
   );
 }
 
+function cellText(c: Column, s: SportSession): string {
+  const v = c.get(s);
+  if (v == null || v === "") return "—";
+  return typeof v === "number" && c.fmt ? c.fmt(v) : String(v);
+}
+
+/** Units for the detail card (the table has them in its column headers). */
+const CARD_UNITS: Record<string, string> = {
+  Distance: " km", "Distance m": " m", Speed: " km/h", "Avg W": " W", NP: " W", "Avg HR": " bpm",
+  Cadence: " spm", "Stroke rate": " spm",
+};
+
+/** Everything we know about one session, for the expanded charts' hover card. */
+function SessionCard({ s, cfg, value, avg, metric }: {
+  s: SportSession;
+  cfg: SportConfig;
+  value?: string;
+  avg?: string | null;
+  metric?: string;
+}) {
+  const rows = cfg.columns.filter((c) => c.label !== "Date" && c.label !== "Session");
+  const extra: [string, string][] = [];
+  if (s.elevation_gain_m) extra.push(["Elevation", `${Math.round(s.elevation_gain_m)} m`]);
+  if (s.aerobic_te != null) extra.push(["Training effect", `${s.aerobic_te.toFixed(1)} aer / ${(s.anaerobic_te ?? 0).toFixed(1)} ana`]);
+  if (s.calories) extra.push(["Calories", String(s.calories)]);
+  return (
+    <div className="scard">
+      <div className="scard-head">
+        <div className="scard-name">{s.key && <span aria-label="Key session">★ </span>}{s.name}</div>
+        <div className="muted">
+          {parseDay(s.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+          {" · "}{s.start.slice(11, 16)} · {SPORT_LABEL[s.sport]}
+        </div>
+        {s.key && <div className="scard-key">★ {s.key}</div>}
+      </div>
+      {metric && value && (
+        <div className="scard-metric">
+          <span>{metric}</span>
+          <b className="tnum">{value}</b>
+          {avg && <span className="muted">4-week avg {avg}</span>}
+        </div>
+      )}
+      <dl className="scard-grid">
+        {[
+          ...rows.map((c) => {
+            const t = cellText(c, s);
+            return [c.label.replace(/ (m|km)$/, ""), t === "—" ? t : t + (CARD_UNITS[c.label] ?? "")] as [string, string];
+          }),
+          ...extra,
+        ].map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd className="tnum">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/** A week's totals and its sessions, for the expanded weekly-volume chart. */
+function WeekCard({ week, sessions, cfg }: { week: SportData["weekly"][number]; sessions: SportSession[]; cfg: SportConfig }) {
+  const end = addDays(parseDay(week.week_start), 6);
+  const inWeek = sessions
+    .filter((s) => s.date >= week.week_start && parseDay(s.date) <= end)
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const dist = cfg.columns.find((c) => c.label.startsWith("Distance"));
+  return (
+    <div className="scard">
+      <div className="scard-head">
+        <div className="scard-name">Week of {shortDate(week.week_start, true)}</div>
+        <div className="muted">
+          {week.sessions} session{week.sessions === 1 ? "" : "s"}
+          {week.key_sessions ? ` (${week.key_sessions} key)` : ""} · {week.distance_km} km · {duration(week.duration_h * 3600)} · load {Math.round(week.load)}
+        </div>
+      </div>
+      {inWeek.length > 0 && (
+        <ul className="scard-list">
+          {inWeek.map((s) => (
+            <li key={s.id}>
+              <span className="muted tnum">{parseDay(s.date).toLocaleDateString(undefined, { weekday: "short" })}</span>
+              <span className="nm">{s.key ? "★ " : ""}{s.name}</span>
+              <span className="tnum">{dist ? cellText(dist, s) : ""}{dist?.label === "Distance" ? " km" : ""}</span>
+              <span className="tnum muted">{duration(s.duration_s)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function SportView({ sport, refreshKey }: { sport: SportKey; refreshKey: number }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const close = useCallback(() => setExpanded(null), []);
   const cfg = CONFIG[sport];
   const [days, setDays] = useState(182);
   const [data, setData] = useState<SportData | null>(null);
@@ -364,7 +459,8 @@ export function SportView({ sport, refreshKey }: { sport: SportKey; refreshKey: 
 
       {loaded && loaded.summary.sessions > 0 && (
         <>
-          <section className="card span-8">
+          <section className="card span-8 has-expand">
+            <ExpandButton label="weekly volume" onClick={() => setExpanded("volume")} />
             <WeeklyVolumeChart data={loaded} color={cfg.color} unitKm={cfg.distUnit} />
           </section>
           <section className="card span-4">
@@ -389,7 +485,8 @@ export function SportView({ sport, refreshKey }: { sport: SportKey; refreshKey: 
           </section>
 
           {cfg.charts.map((c) => (
-            <section className="card span-4" key={c.title}>
+            <section className="card span-4 has-expand" key={c.title}>
+              <ExpandButton label={c.title} onClick={() => setExpanded(c.title)} />
               <div className="chart-title">
                 <span>{c.title}</span>
                 <ChangeChip change={c.change?.(loaded) ?? null} />
@@ -435,6 +532,48 @@ export function SportView({ sport, refreshKey }: { sport: SportKey; refreshKey: 
           </section>
         </>
       )}
+      {loaded && expanded && (() => {
+        const byId = new Map(loaded.sessions.map((s) => [s.id, s]));
+        const range = `${shortDate(loaded.start, true)} – ${shortDate(loaded.end, true)}`;
+        if (expanded === "volume") {
+          return (
+            <ChartModal title={`${cfg.title} · weekly volume`} subtitle={range} onClose={close}>
+              <WeeklyVolumeChart
+                data={loaded} color={cfg.color} unitKm={cfg.distUnit} height={Math.max(360, window.innerHeight - 260)}
+                renderTip={(w) => <WeekCard week={w} sessions={loaded.sessions} cfg={cfg} />}
+              />
+            </ChartModal>
+          );
+        }
+        const c = cfg.charts.find((x) => x.title === expanded);
+        if (!c) return null;
+        return (
+          <ChartModal
+            title={`${cfg.title} · ${c.title}`}
+            subtitle={<>{c.hint} · {range} <ChangeChip change={c.change?.(loaded) ?? null} /></>}
+            onClose={close}
+          >
+            <TrendChart
+              points={c.series(loaded)} color={cfg.color} format={c.fmt} invert={c.invert} lineOnly={c.lineOnly}
+              start={loaded.start} end={loaded.end} height={Math.max(360, window.innerHeight - 280)}
+              renderTip={(p, avg) => {
+                const s = p.id != null ? byId.get(p.id) : undefined;
+                if (!s) {
+                  return (
+                    <div className="scard">
+                      <div className="scard-head">
+                        <div className="scard-name">{c.title}: {c.fmt(p.value)}</div>
+                        <div className="muted">{shortDate(p.date, true)}</div>
+                      </div>
+                    </div>
+                  );
+                }
+                return <SessionCard s={s} cfg={cfg} metric={c.title} value={c.fmt(p.value)} avg={avg == null ? null : c.fmt(avg)} />;
+              }}
+            />
+          </ChartModal>
+        );
+      })()}
     </main>
   );
 }

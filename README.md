@@ -35,6 +35,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 - **Personal bests** across all synced history, flagged when set in the current range: fastest 1 km, 5 km and 10 km, and longest run; best 20-min power and longest ride; fastest pace per 100 m, best SWOLF and longest swim.
 - **Intensity**: time in heart-rate zones Z1–Z5, and the key vs base session split.
 - **Sessions table**, sortable by any column, with ★ on key sessions.
+- **Expand (⤢)** on any chart opens it full-size. Hover a session for its full details (distance, time, pace, power, heart rate, cadence, load, training effect), or hover a week in the volume chart to list that week's sessions.
 
 Activity history is synced for `ACTIVITY_BACKFILL_DAYS`, 5 years by default. Activities come in a few ranged requests, so it's cheap. If you raise the setting later, the next sync fetches the older history too. Metrics that need a particular sensor (power meter, running dynamics, pool swim) only appear when Garmin has them.
 

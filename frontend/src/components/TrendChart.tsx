@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { parseDay, shortDate } from "../format";
 import { useWidth } from "../useWidth";
 
@@ -7,9 +7,19 @@ export interface TrendPoint {
   value: number;
   name?: string;
   key?: string | null;
+  /** Garmin activity id, when the point is a session */
+  id?: number;
 }
 
-const H = 200;
+/** Place a tooltip beside (not above) the point, flipping to stay inside the chart. */
+export function sideTip(x: number, y: number, width: number, height: number) {
+  const right = x > width * 0.55;
+  return {
+    left: x,
+    top: Math.max(8, Math.min(height - 8, y)),
+    transform: `translate(${right ? "calc(-100% - 14px)" : "14px"}, ${y < height * 0.3 ? "-10%" : y > height * 0.7 ? "-90%" : "-50%"})`,
+  };
+}
 const PAD = { top: 12, right: 14, bottom: 22, left: 44 };
 const DAY = 86_400_000;
 
@@ -30,6 +40,8 @@ export function TrendChart({
   lineOnly = false,
   start,
   end,
+  height = 200,
+  renderTip,
 }: {
   points: TrendPoint[];
   color: string;
@@ -39,7 +51,11 @@ export function TrendChart({
   lineOnly?: boolean;
   start: string;
   end: string;
+  height?: number;
+  /** Detailed hover card (expanded view); gets the point and its 4-week average. */
+  renderTip?: (p: TrendPoint, avg: number | null) => ReactNode;
 }) {
+  const H = height;
   const [ref, width] = useWidth<HTMLDivElement>(300);
   const [hover, setHover] = useState<number | null>(null);
   if (points.length < 2) return <div className="empty">Not enough sessions in this range yet</div>;
@@ -118,7 +134,7 @@ export function TrendChart({
             return (
               <circle
                 key={i}
-                cx={x(p.date)} cy={y(p.value)} r={4}
+                cx={x(p.date)} cy={y(p.value)} r={renderTip && hover === i ? 7 : 4}
                 fill={p.key || !split ? c : "var(--surface)"}
                 stroke={c} strokeWidth={p.key || !split ? 0 : 1.5}
                 opacity={hover === i ? 1 : 0.4}
@@ -146,7 +162,12 @@ export function TrendChart({
           <span><span className="sw" style={{ border: "1.5px solid var(--ink-2)", borderRadius: "50%", background: "transparent" }} />Base sessions</span>
         </div>
       )}
-      {hp && hover != null && (
+      {hp && hover != null && renderTip && (
+        <div className="tip rich" style={sideTip(x(hp.date), y(hp.value), width, H)}>
+          {renderTip(hp, lineOnly ? null : avgFor(hp))}
+        </div>
+      )}
+      {hp && hover != null && !renderTip && (
         <div className="tip" style={{ left: x(hp.date), top: y(hp.value) }}>
           <div className="t">{shortDate(hp.date, true)}</div>
           {hp.name && <div className="row">{hp.name}{hp.key ? " ★" : ""}</div>}

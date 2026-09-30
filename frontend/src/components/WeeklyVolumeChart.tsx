@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { duration, shortDate } from "../format";
 import type { SportData } from "../types";
 import { useWidth } from "../useWidth";
+import { sideTip } from "./TrendChart";
 
 type Measure = "distance" | "time" | "load";
-const H = 220;
 const PAD = { top: 16, right: 8, bottom: 24, left: 40 };
 
 function niceMax(v: number) {
@@ -18,12 +18,28 @@ function topRounded(x: number, y: number, w: number, h: number, r: number) {
   return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
 }
 
-export function WeeklyVolumeChart({ data, color, unitKm = "km" }: { data: SportData; color: string; unitKm?: string }) {
+type Week = SportData["weekly"][number];
+
+export function WeeklyVolumeChart({
+  data,
+  color,
+  unitKm = "km",
+  height = 220,
+  renderTip,
+}: {
+  data: SportData;
+  color: string;
+  unitKm?: string;
+  height?: number;
+  /** Detailed hover card (expanded view). */
+  renderTip?: (week: Week) => ReactNode;
+}) {
+  const H = height;
   const [ref, width] = useWidth<HTMLDivElement>();
   const [measure, setMeasure] = useState<Measure>("distance");
   const [hover, setHover] = useState<number | null>(null);
   const weeks = data.weekly;
-  const val = (w: SportData["weekly"][number]) =>
+  const val = (w: Week) =>
     measure === "distance" ? w.distance_km : measure === "time" ? w.duration_h : w.load;
   const max = niceMax(Math.max(...weeks.map(val), 0));
   const innerW = width - PAD.left - PAD.right;
@@ -76,7 +92,12 @@ export function WeeklyVolumeChart({ data, color, unitKm = "km" }: { data: SportD
             );
           })}
         </svg>
-        {hw && hover != null && (
+        {hw && hover != null && renderTip && (
+          <div className="tip rich" style={sideTip(PAD.left + band * hover + band / 2, y(val(hw)), width, H)}>
+            {renderTip(hw)}
+          </div>
+        )}
+        {hw && hover != null && !renderTip && (
           <div className="tip" style={{ left: PAD.left + band * hover + band / 2, top: y(val(hw)) }}>
             <div className="t">Week of {shortDate(hw.week_start)}</div>
             <div className="row">Distance <b>{hw.distance_km} {unitKm}</b></div>

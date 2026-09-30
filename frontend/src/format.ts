@@ -132,3 +132,14 @@ export function compactTitle(title: string, kind: Sport | "study"): string {
     .trim();
   return out || title;
 }
+
+/** One word for a calendar chip: the first meaningful word left after dropping the
+ *  sport word ("Long run 14 km" -> "Long", "Zwift: sweet spot" -> "Zwift"). */
+export function oneWord(title: string, kind: Sport | "study"): string {
+  const words = compactTitle(title, kind)
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter(Boolean);
+  const w = words[0] ?? title;
+  return w.charAt(0).toUpperCase() + w.slice(1);
+}

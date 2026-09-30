@@ -12,7 +12,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 **Dashboard** tab:
 
 - **Sleep at a glance**: last night's duration, score and stages; HRV, resting HR, Body Battery, SpO₂ and respiration; a 14-night stage chart, and a 14-night trend for any sleep metric (HRV, resting HR, score, stages, SpO₂, respiration, Body Battery, stress) against your normal range.
-- **Training calendar**: a month view of completed Garmin activities and study sessions from your calendar. Each entry shows an emoji for the type (🏋️ gym, 🏃 run, 🚴 ride, 🏊 swim, 📚 study) and the rest of its calendar title, with monthly totals. Click a session for pace, heart rate, load and training effect. Planned sessions show as dashed chips on future days.
+- **Training calendar**: a month grid of Garmin activities, planned training and study sessions from your calendar. Each entry is an emoji (🏋️ gym, 🏃 run, 🚴 ride, 🏊 swim, 📚 study) and one word from its title. Done entries are solid colour; planned ones are a lighter tint of the same colour with a dashed outline. Click any entry for its details below the calendar.
 - **Upcoming**: the next 14 days of **key training sessions** (★) and **calls** (☎: any calendar event with "call" in the title; change the word with `CALL_KEYWORDS`).
 - **Training readiness**: a 100-point score with a bar per component, plus alerts for illness, overreaching and sleep debt; see below.
 

@@ -553,3 +553,16 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .scard-list { list-style: none; margin: 0; padding: 0; font-size: 12px; }
 .scard-list li { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 8px; padding: 4px 0; border-top: 1px solid var(--grid); }
 .scard-list .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* calendar chips v3: emoji + one word; solid = done, light tint = still to come */
+.cal .chip.k { --c: var(--sport-other); align-items: center; gap: 5px; padding: 3px 7px; border: 1px solid transparent; color: var(--ink); }
+.cal .chip.k.done { background: color-mix(in srgb, var(--c) 72%, var(--surface)); font-weight: 600; }
+.cal .chip.k.todo { background: color-mix(in srgb, var(--c) 18%, var(--surface)); border: 1px dashed color-mix(in srgb, var(--c) 60%, var(--surface)); color: var(--ink-2); }
+.cal .chip.k .word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cal .chip.k:hover { filter: brightness(1.08); }
+.cal .chip.k.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+.cal-legend { display: flex; gap: 16px; margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+.detail.event { grid-template-columns: 1.6fr repeat(4, 1fr) 2fr; }
+.detail .desc-cell .ink2 { font-size: 12.5px; }

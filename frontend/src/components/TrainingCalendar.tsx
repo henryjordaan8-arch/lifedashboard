@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
-import { addDays, clock, compactTitle, duration, isoDay, KIND_EMOJI, km, pace, parseDay, SPORT_LABEL } from "../format";
+import { addDays, CATEGORY_LABEL, clock, duration, isoDay, KIND_EMOJI, km, oneWord, pace, parseDay, SPORT_LABEL } from "../format";
 import type { Activity, CalEvent, Sport } from "../types";
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -16,9 +16,51 @@ function monthGrid(month: Date): Date[] {
   return days;
 }
 
-function shortMeta(a: Activity) {
-  if (a.distance_m && a.sport !== "strength") return km(a.distance_m, a.sport === "swim" ? 1 : 0).replace(" km", "k");
-  return duration(a.duration_s);
+type Selected = { kind: "activity"; a: Activity } | { kind: "event"; e: CalEvent; done: boolean };
+type Kind = Sport | "study";
+const kindColor = (k: Kind) => (k === "study" ? "var(--cat-study)" : `var(--sport-${k})`);
+const kindLabel = (k: Kind) => (k === "study" ? "Study" : SPORT_LABEL[k]);
+
+/** Emoji + one word; solid when done, a lighter tint of the same colour when still to come. */
+function Chip({ kind, title, done, selected, onClick, tooltip }: {
+  kind: Kind; title: string; done: boolean; selected: boolean; onClick: () => void; tooltip: string;
+}) {
+  return (
+    <button
+      className={`chip k ${done ? "done" : "todo"} ${selected ? "sel" : ""}`}
+      style={{ ["--c" as string]: kindColor(kind) }}
+      onClick={onClick}
+      title={tooltip}
+      aria-pressed={selected}
+    >
+      <span className="emo" aria-label={kindLabel(kind)}>{KIND_EMOJI[kind]}</span>
+      <span className="word">{oneWord(title, kind)}</span>
+    </button>
+  );
+}
+
+function EventDetail({ e, done }: { e: CalEvent; done: boolean }) {
+  const kind: Kind = e.category === "study" ? "study" : e.sport ?? "other";
+  const mins = e.all_day ? null : (new Date(e.end).getTime() - new Date(e.start).getTime()) / 60000;
+  return (
+    <div className="detail event">
+      <div>
+        <div className="name">{KIND_EMOJI[kind]} {e.title}</div>
+        <div className="when">
+          {parseDay(e.start).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}
+          {e.all_day ? " · all day" : ` · ${clock(e.start)}–${clock(e.end)}`}
+        </div>
+      </div>
+      <div><div className="k">Type</div><div className="v">{e.category === "training" ? kindLabel(kind) : CATEGORY_LABEL[e.category]}</div></div>
+      <div><div className="k">Duration</div><div className="v tnum">{mins != null ? duration(mins * 60) : "—"}</div></div>
+      <div><div className="k">Status</div><div className="v">{done ? "✓ Done" : "Planned"}</div></div>
+      <div><div className="k">Key session</div><div className="v">{e.key_reason ? `★ ${e.key_reason}` : "—"}</div></div>
+      <div className="desc-cell">
+        <div className="k">Notes</div>
+        <div className="ink2">{[e.location, e.description].filter(Boolean).join(" · ") || "—"}</div>
+      </div>
+    </div>
+  );
 }
 
 export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[]; refreshKey: number }) {
@@ -28,7 +70,10 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[];
   });
   const [activities, setActivities] = useState<Activity[]>([]);
   const [study, setStudy] = useState<CalEvent[]>([]);
-  const [selected, setSelected] = useState<Activity | null>(null);
+  const [selected, setSelected] = useState<Selected | null>(null);
+  const isSel = (id: string | number) =>
+    selected != null && (selected.kind === "activity" ? selected.a.id === id : selected.e.id === id);
+  const toggle = (next: Selected, id: string | number) => setSelected(isSel(id) ? null : next);
   const days = useMemo(() => monthGrid(month), [month]);
   const todayIso = isoDay(new Date());
   const nowIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -121,63 +166,59 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[];
             <div className={cls} key={iso}>
               <span className="n tnum">{d.getDate()}</span>
               {acts.map((a) => (
-                <button
-                  key={a.id}
-                  className={`chip ${selected?.id === a.id ? "sel" : ""}`}
-                  onClick={() => setSelected(selected?.id === a.id ? null : a)}
-                  title={`${a.name} · ${duration(a.duration_s)}`}
-                >
-                  <span className="bar" style={{ background: `var(--sport-${a.sport})` }} />
-                  <span className="emo" aria-label={SPORT_LABEL[a.sport]}>{KIND_EMOJI[a.sport]}</span>
-                  <span className="lbl">
-                    {compactTitle(a.name, a.sport)} <span className="meta tnum">{shortMeta(a)}</span>
-                  </span>
-                </button>
+                <Chip
+                  key={a.id} kind={a.sport} title={a.name} done selected={isSel(a.id)}
+                  onClick={() => toggle({ kind: "activity", a }, a.id)}
+                  tooltip={`${a.name} · ${duration(a.duration_s)}`}
+                />
               ))}
               {plans.map((p) => (
-                <div key={p.id} className="chip planned" title={`Planned: ${p.title}`}>
-                  <span className="bar" style={{ background: `var(--sport-${p.sport ?? "other"})` }} />
-                  <span className="emo" aria-label={SPORT_LABEL[p.sport ?? "other"]}>{KIND_EMOJI[p.sport ?? "other"]}</span>
-                  <span className="lbl">
-                    {compactTitle(p.title, p.sport ?? "other")}{" "}
-                    {!p.all_day && <span className="meta tnum">{clock(p.start)}</span>}
-                  </span>
-                </div>
+                <Chip
+                  key={p.id} kind={p.sport ?? "other"} title={p.title} done={false} selected={isSel(p.id)}
+                  onClick={() => toggle({ kind: "event", e: p, done: false }, p.id)}
+                  tooltip={`Planned: ${p.title}${p.all_day ? "" : ` · ${clock(p.start)}`}`}
+                />
               ))}
-              {(studyByDay.get(iso) ?? []).map((e) => (
-                <div
-                  key={e.id}
-                  className={`chip study ${iso >= todayIso && e.end > nowIso ? "planned" : ""}`}
-                  title={`${e.title} · ${clock(e.start)}–${clock(e.end)}`}
-                >
-                  <span className="bar" style={{ background: "var(--cat-study)" }} />
-                  <span className="emo" aria-label="Study">{KIND_EMOJI.study}</span>
-                  <span className="lbl">
-                    {compactTitle(e.title, "study")} {!e.all_day && <span className="meta tnum">{clock(e.start)}</span>}
-                  </span>
-                </div>
-              ))}
+              {(studyByDay.get(iso) ?? []).map((e) => {
+                const done = e.end <= nowIso;
+                return (
+                  <Chip
+                    key={e.id} kind="study" title={e.title} done={done} selected={isSel(e.id)}
+                    onClick={() => toggle({ kind: "event", e, done }, e.id)}
+                    tooltip={`${e.title}${e.all_day ? "" : ` · ${clock(e.start)}–${clock(e.end)}`}`}
+                  />
+                );
+              })}
             </div>
           );
         })}
       </div>
 
-      {selected && (
-        <div className="detail">
-          <div>
-            <div className="name">{selected.name}</div>
-            <div className="when">
-              {parseDay(selected.date).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })} · {clock(selected.start)} · {SPORT_LABEL[selected.sport]}
+      <div className="cal-legend">
+        <span><i style={{ background: "color-mix(in srgb, var(--sport-run) 72%, var(--surface))" }} />Done</span>
+        <span><i style={{ background: "color-mix(in srgb, var(--sport-run) 18%, var(--surface))", border: "1px dashed color-mix(in srgb, var(--sport-run) 60%, var(--surface))" }} />Planned</span>
+        <span>Click an entry for details</span>
+      </div>
+      {selected?.kind === "activity" && (() => {
+        const a = selected.a;
+        return (
+          <div className="detail">
+            <div>
+              <div className="name">{KIND_EMOJI[a.sport]} {a.name}</div>
+              <div className="when">
+                {parseDay(a.date).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })} · {clock(a.start)} · {SPORT_LABEL[a.sport]}
+              </div>
             </div>
+            <div><div className="k">Duration</div><div className="v tnum">{duration(a.duration_s)}</div></div>
+            <div><div className="k">Distance</div><div className="v tnum">{km(a.distance_m)}</div></div>
+            <div><div className="k">Pace</div><div className="v tnum">{pace(a.sport, a.distance_m, a.duration_s) ?? "—"}</div></div>
+            <div><div className="k">Avg / max HR</div><div className="v tnum">{a.avg_hr ?? "—"} / {a.max_hr ?? "—"}</div></div>
+            <div><div className="k">Load</div><div className="v tnum">{a.training_load != null ? Math.round(a.training_load) : "—"}</div></div>
+            <div><div className="k">Aer / Ana TE</div><div className="v tnum">{a.aerobic_te?.toFixed(1) ?? "—"} / {a.anaerobic_te?.toFixed(1) ?? "—"}</div></div>
           </div>
-          <div><div className="k">Duration</div><div className="v tnum">{duration(selected.duration_s)}</div></div>
-          <div><div className="k">Distance</div><div className="v tnum">{km(selected.distance_m)}</div></div>
-          <div><div className="k">Pace</div><div className="v tnum">{pace(selected.sport, selected.distance_m, selected.duration_s) ?? "—"}</div></div>
-          <div><div className="k">Avg / max HR</div><div className="v tnum">{selected.avg_hr ?? "—"} / {selected.max_hr ?? "—"}</div></div>
-          <div><div className="k">Load</div><div className="v tnum">{selected.training_load != null ? Math.round(selected.training_load) : "—"}</div></div>
-          <div><div className="k">Aer / Ana TE</div><div className="v tnum">{selected.aerobic_te?.toFixed(1) ?? "—"} / {selected.anaerobic_te?.toFixed(1) ?? "—"}</div></div>
-        </div>
-      )}
+        );
+      })()}
+      {selected?.kind === "event" && <EventDetail e={selected.e} done={selected.done} />}
     </section>
   );
 }

@@ -40,7 +40,12 @@ function eventBlock(e: CalEvent, nowIso: string): Omit<Block, "lane" | "lanes"> 
     start: e.start,
     end: e.end,
     category: e.category,
-    sub: e.category === "training" ? `Training · ${SPORT_LABEL[e.sport ?? "other"]}` : CATEGORY_LABEL[e.category],
+    sub:
+      e.source === "routine"
+        ? `${CATEGORY_LABEL[e.category]} · routine`
+        : e.category === "training"
+          ? `Training · ${SPORT_LABEL[e.sport ?? "other"]}`
+          : CATEGORY_LABEL[e.category],
     status,
     key: e.key_reason,
     desc: e.description,
@@ -113,8 +118,12 @@ export function DayTimeline({
     ...(plan?.unplanned_activities ?? []).map(activityBlock),
   ]);
 
-  const startH = Math.min(6, ...blocks.map((b) => Math.floor(minutes(b.start) / 60)));
-  const endH = Math.max(22, ...blocks.map((b) => (b.end.slice(0, 10) > day ? 24 : Math.ceil(minutes(b.end) / 60))));
+  // Your day window (routine.json, default 05:00–21:00); widened only if something falls outside it.
+  const hm = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const winStart = Math.floor(hm(plan?.window?.start ?? "05:00") / 60);
+  const winEnd = Math.ceil(hm(plan?.window?.end ?? "21:00") / 60);
+  const startH = Math.min(winStart, ...blocks.map((b) => Math.floor(minutes(b.start) / 60)));
+  const endH = Math.max(winEnd, ...blocks.map((b) => (b.end.slice(0, 10) > day ? 24 : Math.ceil(minutes(b.end) / 60))));
   const y = (iso: string) => ((iso.slice(0, 10) > day ? 24 * 60 : minutes(iso)) - startH * 60) * (HOUR_PX / 60);
   const hours = Array.from({ length: endH - startH + 1 }, (_, i) => startH + i);
 
@@ -182,7 +191,7 @@ export function DayTimeline({
         </div>
       )}
 
-      <div className="timeline" style={{ height: (endH - startH) * HOUR_PX }}>
+      <div className="timeline" style={{ height: (endH - startH) * HOUR_PX, marginBottom: 14 }}>
         {hours.map((h) => {
           const top = (h - startH) * HOUR_PX;
           // Hide the hour label when the "now" marker would sit on top of it.
@@ -236,6 +245,13 @@ export function DayTimeline({
             );
           })}
         </div>
+        {(plan?.markers ?? []).map((m) => (
+          <div key={m.title} className="marker" style={{ top: y(`${day}T${m.at}`) }}>
+            <span>
+              <span aria-hidden>{/wake/i.test(m.title) ? "☀" : /sleep/i.test(m.title) ? "☾" : "•"}</span> {m.title} · {m.at}
+            </span>
+          </div>
+        ))}
         {day === todayIso && minutes(nowIso) >= startH * 60 && minutes(nowIso) <= endH * 60 && (
           <div className="now" style={{ top: y(nowIso) }}>
             <span className="tnum">{clock(nowIso)}</span>

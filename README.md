@@ -13,12 +13,12 @@ A personal desktop dashboard for Garmin data, training, work and study.
 
 - **Sleep at a glance**: last night's duration, score and stages; HRV, resting HR, Body Battery, SpO₂ and respiration; a 14-night stage chart, and a 14-night trend for any sleep metric (HRV, resting HR, score, stages, SpO₂, respiration, Body Battery, stress) against your normal range.
 - **Training calendar**: a month view of completed Garmin activities, colour-coded by sport, with monthly totals. Click a session for pace, heart rate, load and training effect. Planned sessions show as dashed chips on future days.
-- **Upcoming sessions**: the next 14 days from Google Calendar, grouped by day.
+- **Upcoming**: the next 14 days of **key training sessions** (★) and **calls** (☎: any calendar event with "call" in the title; change the word with `CALL_KEYWORDS`).
 - **Training readiness**: a 100-point score with a bar per component, plus alerts for illness, overreaching and sleep debt; see below.
 
 **Today** tab:
 
-- **Your day**: an hour-by-hour plan from Google Calendar, colour-coded as training, work, study, reading, personal or other, with hours per area and a bar showing how the day is split. Planned training is checked against Garmin: ✓ done, or flagged if nothing matching was recorded. Garmin activities that weren't on the calendar show up too. Use ‹ › to move between days.
+- **Your day**: an hour-by-hour plan from 05:00 (wake up) to 21:00 (sleep). Your fixed routine is always shown: dinner at 19:15, then bed and reading at 20:00. It lives in `backend/routine.json` if you want to change a time. Calendar events between those times are added, colour-coded as training, work, study, reading, personal or other, with hours per area and a bar showing how the day is split. Planned training is checked against Garmin: ✓ done, or flagged if nothing matching was recorded. Garmin activities that weren't on the calendar show up too. Use ‹ › to move between days.
 - **Key sessions ahead**: your quality sessions for the next 3 weeks: tempo, threshold, VO₂ max and interval runs, and structured bike sessions (sweet spot, FTP, over-unders, or reps like `3×12min`). Base sessions (easy, long, Z2, endurance, recovery), swims and gym are never key. Put a ★ in any event title to mark it by hand, or add title words with `KEY_SESSION_KEYWORDS`.
 - **This week**: a checklist that ticks itself from Garmin and calendar data. Goals live in `backend/goals.json`; see below.
 

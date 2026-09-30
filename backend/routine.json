@@ -1,0 +1,17 @@
+{
+  "_help": [
+    "Your fixed daily routine, shown on the Today timeline every day.",
+    "Calendar events are only shown on the day plan between day_start and day_end.",
+    "A block has start + end; a marker has just 'at'. category: training | work | study | reading | personal | other"
+  ],
+  "day_start": "05:00",
+  "day_end": "21:00",
+  "markers": [
+    { "title": "Wake up", "at": "05:00" },
+    { "title": "Sleep", "at": "21:00" }
+  ],
+  "blocks": [
+    { "title": "Dinner", "start": "19:15", "end": "20:00", "category": "personal" },
+    { "title": "Bed & read", "start": "20:00", "end": "21:00", "category": "reading" }
+  ]
+}

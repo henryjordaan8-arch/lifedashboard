@@ -1,4 +1,4 @@
-import { clock, duration, parseDay, relativeDay, SPORT_LABEL } from "../format";
+import { CATEGORY_LABEL, clock, duration, parseDay, relativeDay, SPORT_LABEL } from "../format";
 import type { CalEvent } from "../types";
 
 export function UpcomingCard({ events, configured }: { events: CalEvent[]; configured: boolean }) {
@@ -13,14 +13,14 @@ export function UpcomingCard({ events, configured }: { events: CalEvent[]; confi
     <section className="card span-4 upcoming">
       <div className="card-head">
         <h2>Upcoming</h2>
-        <span className="sub">Next 14 days · Google Calendar</span>
+        <span className="sub">Key sessions &amp; calls · next 14 days</span>
       </div>
       {!configured ? (
         <div className="empty">
           Add your calendar's secret iCal address as <code>GCAL_ICS_URLS</code> in <code>backend/.env</code>.
         </div>
       ) : events.length === 0 ? (
-        <div className="empty">Nothing planned — enjoy the rest.</div>
+        <div className="empty">No key sessions or calls in the next 14 days.</div>
       ) : (
         <div className="up-list">
         {[...groups.entries()].map(([day, items]) => (
@@ -35,14 +35,22 @@ export function UpcomingCard({ events, configured }: { events: CalEvent[]; confi
               const mins = e.all_day ? null : (new Date(e.end).getTime() - new Date(e.start).getTime()) / 1000;
               return (
                 <div className={`session ${e.id === nextId ? "next" : ""}`} key={e.id}>
-                  <div className="bar" style={{ background: `var(--sport-${e.sport ?? "other"})` }} />
+                  <div
+                    className="bar"
+                    style={{ background: e.category === "training" ? `var(--sport-${e.sport ?? "other"})` : `var(--cat-${e.category})` }}
+                  />
                   <div style={{ minWidth: 0 }}>
                     <div className="row1">
                       <span className="title">{e.title}</span>
                       <span className="time tnum">{e.all_day ? "All day" : `${clock(e.start)}–${clock(e.end)}`}</span>
                     </div>
                     <div className="tag">
-                      {SPORT_LABEL[e.sport ?? "other"]}
+                      {e.is_call && !e.key_reason ? (
+                        <span className="up-kind">☎ Call</span>
+                      ) : e.key_reason ? (
+                        <span className="up-kind">★ {e.key_reason}</span>
+                      ) : null}
+                      {e.category === "training" && e.sport && e.sport !== "other" ? SPORT_LABEL[e.sport] : CATEGORY_LABEL[e.category]}
                       {mins ? ` · ${duration(mins)}` : ""}
                       {e.location ? ` · ${e.location}` : ""}
                     </div>

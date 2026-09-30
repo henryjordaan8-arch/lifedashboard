@@ -220,22 +220,26 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
 
     @app.get("/api/upcoming")
     def upcoming(days: int = Query(14, ge=1, le=60)) -> dict[str, Any]:
-        """Planned training sessions from now on."""
+        """Planned training (for the calendar) and highlights: key sessions + calls."""
         if not (cfg.demo_mode or calendar_sources(cfg)):
-            return {"configured": False, "events": []}
+            return {"configured": False, "events": [], "highlights": []}
         today = date.today()
         now_iso = datetime.now().isoformat(timespec="minutes")
-        evs = [
-            e for e in events_between(today, today + timedelta(days=days))
-            if e["category"] == "training" and (e["all_day"] or e["end"] >= now_iso)
-        ]
-        return {"configured": True, "events": evs}
+        ahead = [e for e in events_between(today, today + timedelta(days=days)) if e["all_day"] or e["end"] >= now_iso]
+        for e in ahead:
+            e["is_call"] = calendar_feed.is_call(e["title"], cfg.call_keywords)
+        return {
+            "configured": True,
+            "events": [e for e in ahead if e["category"] == "training"],
+            "highlights": [e for e in ahead if (e["category"] == "training" and e.get("key_reason")) or e["is_call"]],
+        }
 
     @app.get("/api/day")
     def day_view(day: str | None = Query(None, alias="date")) -> dict[str, Any]:
         d = _day(day)
         evs = events_between(d, d + timedelta(days=1))
-        plan = planner.day_plan(d, evs, activities_between(d.isoformat(), d.isoformat()))
+        plan = planner.day_plan(d, evs, activities_between(d.isoformat(), d.isoformat()),
+                                planner.load_routine(cfg.routine_path))
         plan["configured"] = cfg.demo_mode or bool(calendar_sources(cfg))
         return plan
 

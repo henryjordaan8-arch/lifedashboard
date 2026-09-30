@@ -71,10 +71,15 @@ export interface CalEvent {
   description: string | null;
   location: string | null;
   completed_by?: { id: number; name: string; start: string; duration_s: number | null; distance_m: number | null } | null;
+  /** "routine" for your fixed daily blocks (routine.json) */
+  source?: string;
+  is_call?: boolean;
 }
 
 export interface DayPlan {
   date: string;
+  window?: { start: string; end: string };
+  markers?: { title: string; at: string }[];
   configured: boolean;
   events: CalEvent[];
   hours: Record<Category, number>;

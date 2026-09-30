@@ -42,6 +42,8 @@ def test_demo_end_to_end(tmp_path):
         assert up["configured"] and len(up["events"]) >= 4
         assert {e["category"] for e in up["events"]} == {"training"}
         assert [e["start"] for e in up["events"]] == sorted(e["start"] for e in up["events"])
+        assert up["highlights"] and all(e["key_reason"] or e["is_call"] for e in up["highlights"])
+        assert any(e["is_call"] for e in up["highlights"])
 
         day = c.get("/api/day").json()
         cats = {e["category"] for e in day["events"]}

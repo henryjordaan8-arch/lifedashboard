@@ -86,6 +86,10 @@ _KEY_RULES = [  # (pattern, reason for a run, reason for a ride)
 ]
 
 
+def is_call(title: str, keywords: list[str]) -> bool:
+    return _has_word(title.lower(), [k.lower() for k in keywords] + [k.lower() + "s" for k in keywords])
+
+
 def key_reason(title: str, category: str, sport: str | None, keywords: list[str] | None = None) -> str | None:
     """Why a planned session counts as "key", or None for base / non-training events."""
     if "★" in title or "⭐" in title:

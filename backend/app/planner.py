@@ -53,9 +53,40 @@ def match_activities(events: list[dict], activities: list[dict]) -> None:
             }
 
 
-def day_plan(day: date, events: list[dict], activities: list[dict]) -> dict[str, Any]:
+DEFAULT_ROUTINE: dict[str, Any] = {"day_start": "05:00", "day_end": "21:00", "markers": [], "blocks": []}
+
+
+def load_routine(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return DEFAULT_ROUTINE
+    return {**DEFAULT_ROUTINE, **json.loads(path.read_text())}
+
+
+def routine_events(day: date, routine: dict[str, Any]) -> list[dict[str, Any]]:
+    """The fixed daily blocks (dinner, reading…) as calendar-like events for `day`."""
+    d = day.isoformat()
+    return [
+        {"id": f"routine-{d}-{i}", "title": b["title"], "start": f"{d}T{b['start']}", "end": f"{d}T{b['end']}",
+         "all_day": False, "category": b.get("category", "personal"), "sport": None, "key_reason": None,
+         "description": None, "location": None, "source": "routine"}
+        for i, b in enumerate(routine.get("blocks", []))
+    ]
+
+
+def day_plan(
+    day: date, events: list[dict], activities: list[dict], routine: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    routine = routine or DEFAULT_ROUTINE
     day_iso = day.isoformat()
-    todays = [e for e in events if e["start"][:10] == day_iso or (e["all_day"] and e["start"] <= day_iso < e["end"])]
+    win_start, win_end = f"{day_iso}T{routine['day_start']}", f"{day_iso}T{routine['day_end']}"
+    todays = [
+        e for e in events
+        # timed events that overlap your day window, plus all-day events
+        if (not e["all_day"] and e["start"][:10] <= day_iso <= e["end"][:10]
+            and e["start"] < win_end and e["end"] > win_start)
+        or (e["all_day"] and e["start"] <= day_iso < e["end"])
+    ]
+    todays = sorted(todays + routine_events(day, routine), key=lambda e: e["start"])
     acts = [a for a in activities if a["date"] == day_iso]
     match_activities(todays, acts)
     totals = {c: 0.0 for c in CATEGORIES}
@@ -64,6 +95,8 @@ def day_plan(day: date, events: list[dict], activities: list[dict]) -> dict[str,
     matched = {e["completed_by"]["id"] for e in todays if e.get("completed_by")}
     return {
         "date": day_iso,
+        "window": {"start": routine["day_start"], "end": routine["day_end"]},
+        "markers": [{"title": m["title"], "at": m["at"]} for m in routine.get("markers", [])],
         "events": todays,
         "hours": {k: round(v, 2) for k, v in totals.items()},
         # Garmin activities that weren't on the calendar at all

@@ -69,3 +69,28 @@ def test_activity_count_counts_scheduled_sessions_as_planned():
               ev("Ride", "2026-10-03T08:00", "2026-10-03T10:00", sport="ride")]
     r = evaluate({"metric": "activity_count", "sport": "run", "target": 2}, datetime(2026, 9, 30, 12), runs, events)
     assert r["progress"] == 1 and r["planned"] == 1 and r["status"] == "on_track"
+
+
+def test_day_window_and_routine():
+    routine = {"day_start": "05:00", "day_end": "21:00",
+               "markers": [{"title": "Wake up", "at": "05:00"}, {"title": "Sleep", "at": "21:00"}],
+               "blocks": [{"title": "Dinner", "start": "19:15", "end": "20:00", "category": "personal"},
+                          {"title": "Bed & read", "start": "20:00", "end": "21:00", "category": "reading"}]}
+    events = [ev("Early", "2026-09-28T04:00", "2026-09-28T04:45", category="work", sport=None),
+              ev("Gym", "2026-09-28T06:30", "2026-09-28T07:20", sport="strength"),
+              ev("Late show", "2026-09-28T22:00", "2026-09-28T23:30", category="other", sport=None),
+              ev("Overlaps start", "2026-09-28T04:30", "2026-09-28T05:30", category="work", sport=None)]
+    plan = planner.day_plan(date(2026, 9, 28), events, [], routine)
+    titles = [e["title"] for e in plan["events"]]
+    assert titles == ["Overlaps start", "Gym", "Dinner", "Bed & read"]
+    assert plan["window"] == {"start": "05:00", "end": "21:00"}
+    assert [m["title"] for m in plan["markers"]] == ["Wake up", "Sleep"]
+    assert plan["hours"]["reading"] == 1.0 and plan["hours"]["personal"] == 0.75
+    assert next(e for e in plan["events"] if e["title"] == "Dinner")["source"] == "routine"
+
+
+def test_routine_file_loads(tmp_path):
+    assert planner.load_routine(tmp_path / "missing.json")["day_start"] == "05:00"
+    from app.config import BACKEND_DIR
+    r = planner.load_routine(BACKEND_DIR / "routine.json")
+    assert r["day_end"] == "21:00" and {b["title"] for b in r["blocks"]} == {"Dinner", "Bed & read"}

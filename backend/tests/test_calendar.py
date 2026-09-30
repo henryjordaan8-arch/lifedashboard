@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.calendar_feed import classify, key_reason, parse_events
+from app.calendar_feed import classify, is_call, key_reason, parse_events
 
 ICS = """BEGIN:VCALENDAR
 VERSION:2.0
@@ -82,3 +82,8 @@ def test_key_sessions_are_quality_run_and_bike_work():
     assert key("Statistics exam", "study") is None
     assert key("★ Parkrun") == "starred"
     assert key_reason("Hill session", "training", "run", ["hill"]) == "“hill” in title"
+
+
+def test_is_call():
+    assert is_call("Client call", ["call"]) and is_call("Calls with team", ["call"])
+    assert not is_call("Recall review", ["call"]) and not is_call("Callisthenics", ["call"])

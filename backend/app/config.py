@@ -43,6 +43,11 @@ class Settings:
     key_session_keywords: list[str] = field(
         default_factory=lambda: _list("KEY_SESSION_KEYWORDS")
     )
+    routine_path: Path = field(
+        default_factory=lambda: BACKEND_DIR / os.getenv("ROUTINE_PATH", "routine.json")
+    )
+    # Title words that make an event a "call" (shown under Upcoming with key sessions).
+    call_keywords: list[str] = field(default_factory=lambda: _list("CALL_KEYWORDS") or ["call"])
     goals_path: Path = field(
         default_factory=lambda: BACKEND_DIR / os.getenv("GOALS_PATH", "goals.json")
     )

@@ -51,7 +51,8 @@ export const api = {
   sleep: (days: number) => get<{ nights: SleepNight[] }>(`/api/sleep?days=${days}`).then((r) => r.nights),
   activities: (start: string, end: string) =>
     get<{ activities: Activity[] }>(`/api/activities?start=${start}&end=${end}`).then((r) => r.activities),
-  upcoming: (days: number) => get<{ configured: boolean; events: CalEvent[] }>(`/api/upcoming?days=${days}`),
+  upcoming: (days: number) =>
+    get<{ configured: boolean; events: CalEvent[]; highlights?: CalEvent[] }>(`/api/upcoming?days=${days}`),
   readiness: () => get<Readiness>("/api/readiness"),
   sport: (name: SportKey, days: number) => get<SportData>(`/api/sport/${name}?days=${days}`),
   day: (date: string) => get<DayPlan>(`/api/day?date=${date}`),

@@ -36,7 +36,10 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [nights, setNights] = useState<SleepNight[]>([]);
   const [readiness, setReadiness] = useState<Readiness | null>(null);
-  const [upcoming, setUpcoming] = useState<{ configured: boolean; events: CalEvent[] }>({ configured: true, events: [] });
+  const [upcoming, setUpcoming] = useState<{ configured: boolean; events: CalEvent[]; highlights?: CalEvent[] }>({
+    configured: true,
+    events: [],
+  });
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,7 +140,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
           <SleepCard nights={nights} />
           <ReadinessCard data={readiness} />
           <TrainingCalendar planned={upcoming.events} refreshKey={refreshKey} />
-          <UpcomingCard events={upcoming.events} configured={upcoming.configured} />
+          <UpcomingCard events={upcoming.highlights ?? []} configured={upcoming.configured} />
         </main>
       )}
     </div>

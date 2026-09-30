@@ -35,21 +35,22 @@ _WORK = [  # weekday (Mon-Fri) -> [(title, (h, m), minutes)]
     [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 180), ("Work — planning meeting", (14, 0), 90)],
     [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 150), ("Work — weekly review", (13, 30), 60)],
 ]
-_READING = {  # weekday -> [(title, (h, m), minutes)]
-    0: [("Reading — novel", (21, 30), 40)], 1: [("Reading — novel", (21, 30), 40)],
-    2: [("Reading — non-fiction", (20, 30), 60)], 3: [("Reading — novel", (22, 0), 30)],
-    4: [("Reading — novel", (21, 30), 45)], 5: [("Reading in the park", (15, 0), 90)],
-    6: [("Reading — non-fiction", (20, 0), 60)],
+# Reading and dinner come from the fixed routine (routine.json), not the calendar.
+_CALLS = {  # weekday -> [(title, (h, m), minutes, category)]
+    1: [("Client call", (11, 0), 30, "work")],
+    3: [("Call with coach", (12, 30), 30, "training")],
+    6: [("Family call", (16, 0), 30, "personal")],
 }
 _PERSONAL = {
     0: [("Lunch", (12, 30), 60)], 1: [("Lunch", (12, 30), 60)], 2: [("Lunch", (12, 30), 60)],
-    3: [("Lunch", (12, 30), 60)], 4: [("Lunch", (12, 30), 60), ("Dinner with friends", (19, 0), 150)],
+    3: [("Lunch", (12, 30), 60)], 4: [("Lunch", (12, 30), 60)],
     5: [("Groceries & errands", (12, 30), 90)], 6: [("Family lunch", (12, 30), 120)],
 }
 _STUDY = {  # weekday -> [(title, (h, m), minutes)]
-    0: [("Study — statistics module", (19, 30), 90)],
-    1: [("Lecture: research methods", (19, 30), 90)],
-    3: [("Study — statistics module", (19, 30), 120)],
+    0: [("Study — statistics module", (17, 15), 90)],
+    1: [("Lecture: research methods", (16, 30), 75)],
+    3: [("Study — statistics module", (16, 30), 75)],
+    4: [("Study — weekly review", (17, 15), 60)],
     5: [("Study — assignment 2", (10, 30), 120)],
     6: [("Revision — weekly notes", (15, 0), 60)],
 }
@@ -206,7 +207,10 @@ def seed(
 
         # Activities: follow the plan, skip the odd session, nothing yet for today.
         load_today = 0.0
-        for type_key, name, (hh, mm), minutes, _km, load in (_WEEK_PLAN[d.weekday()] if i > 0 else []):
+        now = datetime.now()
+        for type_key, name, (hh, mm), minutes, _km, load in _WEEK_PLAN[d.weekday()]:
+            if i == 0 and datetime(d.year, d.month, d.day, hh, mm) + timedelta(minutes=minutes) > now:
+                continue  # today: only sessions that are already over
             if rng.random() < 0.1:
                 continue
             minutes = minutes * rng.uniform(0.9, 1.1)
@@ -281,7 +285,7 @@ def calendar_events(start: date, end: date) -> list[dict[str, Any]]:
         if wd < 5:
             out += [ev(d, t, hm, m, "work") for t, hm, m in _WORK[wd]]
         out += [ev(d, t, hm, m, "study") for t, hm, m in _STUDY.get(wd, [])]
-        out += [ev(d, t, hm, m, "reading") for t, hm, m in _READING.get(wd, [])]
+        out += [ev(d, t, hm, m, c) for t, hm, m, c in _CALLS.get(wd, [])]
         out += [ev(d, t, hm, m, "personal") for t, hm, m in _PERSONAL.get(wd, [])]
         d += timedelta(days=1)
 

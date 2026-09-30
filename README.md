@@ -80,6 +80,12 @@ The first start installs everything, which takes a minute or two. After that it 
 
 > macOS may block the first double-click ("unidentified developer"). Right-click the file, choose **Open**, then **Open** again. You only need to do this once.
 
+## Open it from any device
+
+To use the dashboard from your phone, tablet or another computer, host it online
+behind a password. **[DEPLOY.md](DEPLOY.md)** walks through it step by step. It takes
+about 15 minutes and costs around $5/month on Railway.
+
 ## Connecting your accounts
 
 1. **Garmin**: run the login step above. It asks for your Garmin email, password and, if you use it, a two-factor code, then saves a login token in `~/.garminconnect`. Your password isn't stored. The first sync pulls 90 days of sleep and health data plus 2 years of activities, which takes 5–10 minutes; the dashboard fills in as it goes. After that it syncs every hour, or when you click **Sync now**.

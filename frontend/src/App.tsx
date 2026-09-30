@@ -24,7 +24,7 @@ const TABS = [
 type Tab = (typeof TABS)[number]["id"];
 const tabFromHash = (): Tab => TABS.find((t) => `#/${t.id}` === window.location.hash)?.id ?? "dashboard";
 
-export function App() {
+export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
   const [tab, setTab] = useState<Tab>(tabFromHash);
   useEffect(() => {
     const on = () => setTab(tabFromHash());
@@ -105,6 +105,11 @@ export function App() {
           <button className="btn" onClick={syncNow} disabled={status?.syncing}>
             {status?.syncing ? "Syncing…" : "Sync now"}
           </button>
+          {onSignOut && (
+            <button className="btn ghost" onClick={onSignOut} title="Sign out">
+              Sign out
+            </button>
+          )}
         </div>
       </header>
 

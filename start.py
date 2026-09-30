@@ -4,6 +4,7 @@
     python3 start.py            # set up (first run), start everything, open the browser
     python3 start.py --login    # one-time Garmin login (handles MFA), then exit
     python3 start.py --demo     # run on sample data, no accounts needed
+    python3 start.py --garmin-token   # print your saved Garmin login, for a hosted copy
 
 Needs Python 3.11+ and Node.js 20+. Press Ctrl+C to stop.
 """
@@ -117,6 +118,25 @@ def _stop(*_: object) -> None:
     raise KeyboardInterrupt
 
 
+def print_garmin_token() -> int:
+    store = Path(os.path.expanduser(env_value("GARMIN_TOKENSTORE") or "~/.garminconnect"))
+    file = store if store.name.endswith(".json") else store / "garmin_tokens.json"
+    if not file.exists():
+        fail("No saved Garmin login yet. Run  python3 start.py --login  first.")
+    text = file.read_text().strip()
+    try:
+        import json
+        text = json.dumps(json.loads(text), separators=(",", ":"))  # one line, easy to paste
+    except ValueError:
+        pass
+    print("\nCopy everything between the lines into a variable called GARMIN_TOKENS on your host.")
+    print("Treat it like a password: it gives access to your Garmin account.\n")
+    print("-" * 60)
+    print(text)
+    print("-" * 60)
+    return 0
+
+
 def main() -> int:
     # Ctrl+C, closing the terminal window, or a plain `kill` all shut both servers down cleanly.
     for sig in ("SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"):
@@ -127,7 +147,12 @@ def main() -> int:
     ap.add_argument("--login", action="store_true", help="one-time Garmin login (handles MFA), then exit")
     ap.add_argument("--demo", action="store_true", help="run on sample data, no accounts needed")
     ap.add_argument("--no-browser", action="store_true", help="don't open the browser")
+    ap.add_argument("--garmin-token", action="store_true",
+                    help="print the saved Garmin login to paste into GARMIN_TOKENS on your host")
     args = ap.parse_args()
+
+    if args.garmin_token:
+        return print_garmin_token()
 
     setup_backend()
 

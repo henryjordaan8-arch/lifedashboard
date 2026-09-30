@@ -9,15 +9,21 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import calendar_feed, demo, garmin, normalize, planner, readiness, sport
+from . import auth, calendar_feed, demo, garmin, normalize, planner, readiness, sport
 from .config import BACKEND_DIR, Settings, calendar_sources, settings as default_settings
 from .store import Store
 
 log = logging.getLogger("lifedashboard")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+
+class Login(BaseModel):
+    password: str
 
 
 class ManualTick(BaseModel):
@@ -58,6 +64,7 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
                     client_holder["client"], store, cfg.backfill_days,
                     activity_backfill_days=cfg.activity_backfill_days,
                 )
+                garmin.save_tokens(client_holder["client"], cfg)
             state.last_sync = datetime.now(timezone.utc).isoformat(timespec="seconds")
             state.last_error = None
         except garmin.GarminNotConfigured as exc:
@@ -84,8 +91,60 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
         yield
         task.cancel()
 
-    app = FastAPI(title="Life Dashboard", lifespan=lifespan)
+    app = FastAPI(title="Life Dashboard", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.run_sync = run_sync  # exposed for tests
+
+    # ---- login -------------------------------------------------------------
+    misconfigured = cfg.require_password and not cfg.dashboard_password
+    if misconfigured:
+        log.error("Running hosted but DASHBOARD_PASSWORD is empty: the dashboard stays locked.")
+    # With no password configured on a server, lock with an unguessable one so nothing leaks.
+    password = cfg.dashboard_password or (auth.secrets.token_urlsafe(32) if misconfigured else "")
+    gate = auth.Auth(password, auth.load_secret(cfg.session_secret, cfg.db_path.parent))
+    public = {"/api/health", "/api/session", "/api/login", "/api/logout"}
+
+    @app.middleware("http")
+    async def require_login(request: Request, call_next):
+        path = request.url.path
+        if path.startswith("/api/") and path not in public and not gate.valid(request.cookies.get(auth.COOKIE)):
+            return JSONResponse({"detail": "login required"}, status_code=401)
+        return await call_next(request)
+
+    def _client(request: Request) -> str:
+        fwd = request.headers.get("x-forwarded-for", "")
+        return fwd.split(",")[0].strip() or (request.client.host if request.client else "?")
+
+    @app.get("/api/health")
+    def health() -> dict[str, str]:
+        return {"ok": "true"}
+
+    @app.get("/api/session")
+    def session(request: Request) -> dict[str, bool]:
+        return {"auth_required": gate.enabled, "logged_in": gate.valid(request.cookies.get(auth.COOKIE))}
+
+    @app.post("/api/login")
+    def login(body: Login, request: Request, response: Response) -> dict[str, bool]:
+        if misconfigured:
+            raise HTTPException(503, "No DASHBOARD_PASSWORD is set on the server yet. Add it in your host's settings and redeploy.")
+        who = _client(request)
+        # Per-address limit, plus a global one so rotating addresses doesn't help a guesser.
+        if gate.locked_out(who) or gate.locked_out("*", auth.MAX_FAILURES_GLOBAL):
+            raise HTTPException(429, "Too many attempts — try again in 15 minutes.")
+        if gate.enabled and not gate.check_password(body.password):
+            gate.record_failure(who)
+            gate.record_failure("*")
+            raise HTTPException(401, "Wrong password")
+        response.set_cookie(
+            auth.COOKIE, gate.issue(), max_age=auth.SESSION_DAYS * 86400, httponly=True,
+            secure=request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https",
+            samesite="lax",
+        )
+        return {"logged_in": True}
+
+    @app.post("/api/logout")
+    def logout(response: Response) -> dict[str, bool]:
+        response.delete_cookie(auth.COOKIE)
+        return {"logged_in": False}
 
     def _range(days: int, end: date | None = None) -> tuple[str, str]:
         end = end or date.today()
@@ -254,6 +313,21 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
         vo2_start = (today - timedelta(days=60)).isoformat()
         vo2 = {d: normalize.vo2max(d, r) for d, r in store.get_daily("maxmetrics", vo2_start, end).items()}
         return readiness.build(today, get_day, acts, garmin_today, {d: v for d, v in vo2.items() if v})
+
+    # ---- the dashboard itself (production build) ----------------------------------
+    dist = cfg.frontend_dist
+    if (dist / "index.html").exists():
+        if (dist / "assets").is_dir():
+            app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+        @app.get("/{path:path}", include_in_schema=False)
+        def spa(path: str) -> FileResponse:
+            if path.startswith("api/"):
+                raise HTTPException(404)
+            file = (dist / path).resolve()
+            if path and file.is_file() and dist.resolve() in file.parents:
+                return FileResponse(file)
+            return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app
 

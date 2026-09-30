@@ -58,6 +58,21 @@ class Settings:
     db_path: Path = field(
         default_factory=lambda: BACKEND_DIR / os.getenv("DB_PATH", "data/lifedashboard.sqlite3")
     )
+    # Contents of a saved Garmin login (see `start.py --garmin-token`), for servers where an
+    # interactive login isn't possible. Written to GARMIN_TOKENSTORE on first start.
+    garmin_tokens: str = field(default_factory=lambda: os.getenv("GARMIN_TOKENS", "").strip())
+
+    # --- hosting ---------------------------------------------------------------
+    # When set, the dashboard asks for this password (required when hosted online).
+    dashboard_password: str = field(default_factory=lambda: os.getenv("DASHBOARD_PASSWORD", ""))
+    # Set by the Docker image: refuse to show any data until DASHBOARD_PASSWORD is set.
+    require_password: bool = field(default_factory=lambda: _bool("HOSTED"))
+    # Signs login cookies. Optional: one is generated and kept next to the database.
+    session_secret: str = field(default_factory=lambda: os.getenv("SESSION_SECRET", ""))
+    # Built dashboard (npm run build). Served by the backend when present.
+    frontend_dist: Path = field(
+        default_factory=lambda: BACKEND_DIR.parent / os.getenv("FRONTEND_DIST", "frontend/dist")
+    )
 
 
 settings = Settings()

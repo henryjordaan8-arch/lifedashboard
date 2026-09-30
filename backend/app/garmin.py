@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import logging
 import time
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Any, Callable
 
 from .config import Settings
@@ -23,10 +26,43 @@ class GarminNotConfigured(RuntimeError):
     pass
 
 
+def token_file(tokenstore: str) -> Path:
+    """Where python-garminconnect keeps the login for a GARMIN_TOKENSTORE value."""
+    p = Path(tokenstore).expanduser()
+    return p if p.name.endswith(".json") else p / "garmin_tokens.json"
+
+
+def seed_tokens(settings: Settings) -> None:
+    """On a server, write the pasted GARMIN_TOKENS to disk.
+
+    Done once per pasted value: after that the file is refreshed in place, and a
+    newly pasted value (e.g. after the login expired) replaces it.
+    """
+    if not settings.garmin_tokens:
+        return
+    path = token_file(settings.garmin_tokenstore)
+    marker = path.with_suffix(".seeded")
+    digest = hashlib.sha256(settings.garmin_tokens.encode()).hexdigest()
+    if path.exists() and marker.exists() and marker.read_text() == digest:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(settings.garmin_tokens)
+    path.chmod(0o600)
+    marker.write_text(digest)
+    log.info("Saved Garmin login from GARMIN_TOKENS to %s", path)
+
+
+def save_tokens(client: Any, settings: Settings) -> None:
+    """Persist the (possibly refreshed) login so it survives restarts."""
+    with contextlib.suppress(Exception):
+        client.client.dump(str(token_file(settings.garmin_tokenstore)))
+
+
 def connect(settings: Settings, prompt_mfa: Callable[[], str] | None = None):
     """Log in, reusing cached tokens when possible."""
     from garminconnect import Garmin
 
+    seed_tokens(settings)
     client = Garmin(
         settings.garmin_email or None,
         settings.garmin_password or None,
@@ -36,11 +72,22 @@ def connect(settings: Settings, prompt_mfa: Callable[[], str] | None = None):
         client.login(settings.garmin_tokenstore)
     except Exception as exc:  # noqa: BLE001 - surface any login failure the same way
         if not (settings.garmin_email and settings.garmin_password):
+            if settings.require_password:  # hosted
+                raise GarminNotConfigured(
+                    "Garmin login missing or expired. On your computer run `python3 start.py --login`, "
+                    "then `python3 start.py --garmin-token`, paste the output into GARMIN_TOKENS "
+                    "on your host and redeploy."
+                ) from exc
             raise GarminNotConfigured(
                 "Not logged in to Garmin yet. Run `python3 start.py --login` "
                 "(or double-click garmin-login) once, then click Sync now."
             ) from exc
         raise
+    # The library only auto-saves refreshed tokens after a password login; make it
+    # do so after a token login too, so a long-running server never loses its login.
+    if hasattr(client, "client") and hasattr(client.client, "_tokenstore_path"):
+        client.client._tokenstore_path = str(token_file(settings.garmin_tokenstore))
+    save_tokens(client, settings)
     return client
 
 

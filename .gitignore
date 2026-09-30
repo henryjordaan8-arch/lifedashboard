@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Local config & data — never commit credentials or personal health data
+.env
+backend/data/
+*.sqlite3
+
+# Frontend
+node_modules/
+frontend/dist/
+*.tsbuildinfo

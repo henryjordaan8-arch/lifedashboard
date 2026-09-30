@@ -61,46 +61,63 @@ backend/   FastAPI + SQLite. Syncs Garmin (python-garminconnect) and reads Googl
 frontend/  React + Vite + TypeScript. Dashboard UI; hand-drawn SVG charts, no chart library
 ```
 
-## Quick start (demo data, no accounts needed)
+## Getting started
+
+You need **Python 3.11+** ([python.org](https://www.python.org/downloads/)) and **Node.js 20+** ([nodejs.org](https://nodejs.org), the LTS version).
 
 ```bash
-# backend
-cd backend
-python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-DEMO_MODE=true uvicorn app.main:app --port 8000          # or set DEMO_MODE=true in .env
-
-# frontend (second terminal)
-cd frontend
-npm install
-npm run dev                                              # http://localhost:5173
+git clone https://github.com/henryjordaan8-arch/lifedashboard.git
+cd lifedashboard
 ```
 
-## Using your real data
+| | macOS | Windows | Terminal (any OS) |
+|---|---|---|---|
+| **1. Log in to Garmin** (once) | double-click `garmin-login.command` | double-click `garmin-login.bat` | `python3 start.py --login` |
+| **2. Start the dashboard** | double-click `start.command` | double-click `start.bat` | `python3 start.py` |
+| Try it with sample data | | | `python3 start.py --demo` |
 
-1. `cp backend/.env.example backend/.env` and fill it in.
-2. **Garmin**: set `GARMIN_EMAIL`/`GARMIN_PASSWORD`, then log in once interactively (this handles MFA and caches tokens in `~/.garminconnect`):
-   ```bash
-   cd backend && python -m scripts.garmin_login
-   ```
-   After that you can remove the password from `.env`. The first sync backfills `BACKFILL_DAYS` (default 90) of history, which takes a few minutes. After that only new and recent days are fetched, every `SYNC_INTERVAL_MINUTES`, or when you click **Sync now**.
-3. **Google Calendar**: for each calendar, open *Settings → (calendar) → Integrate calendar* and copy the **Secret address in iCal format**.
-   - If an area has its own calendar, put it in `GCAL_TRAINING_ICS_URLS`, `GCAL_WORK_ICS_URLS`, `GCAL_STUDY_ICS_URLS`, `GCAL_READING_ICS_URLS` or `GCAL_PERSONAL_ICS_URLS`. Every event in it gets that category.
-   - Put mixed calendars in `GCAL_ICS_URLS`. Their events are categorised by title: sport words → training, "lecture/study/exam…" → study, "meeting/stand-up/work…" → work, "read/book…" → reading, "lunch/groceries/friends…" → personal. Add your own words with `*_KEYWORDS`.
-   - The sport comes from the title too ("run", "Zwift", "swim", "gym", …).
-4. **Weekly goals** live in `backend/goals.json`. Currently: 5 gym sessions, 2 runs, 2 bike sessions, 1 swim and 5 study sessions, all minimums. Gym counts Garmin *strength* activities, and study counts finished study blocks in your calendar. Sessions still on the calendar later in the week count toward "on track". Each goal has a metric that the app measures for you:
+The first start installs everything, which takes a minute or two. After that it opens **http://localhost:5173** in your browser. Keep the window open while you use the dashboard and press **Ctrl+C** (or close the window) to stop.
 
-   | metric | counts | options |
-   |---|---|---|
-   | `activity_count` / `activity_hours` / `activity_km` | Garmin activities | `sport` (one or a list), `name_contains`, `min_minutes` |
-   | `calendar_hours` / `calendar_count` | calendar blocks that have ended | `category`, `title_contains` |
-   | `sleep_nights` | nights meeting a bar | `min_hours`, `min_score` |
-   | `step_days` | days meeting a bar | `min_steps` |
-   | `manual` | you tick it on the dashboard | |
+> macOS may block the first double-click ("unidentified developer"). Right-click the file, choose **Open**, then **Open** again. You only need to do this once.
 
-   Add `"mode": "at_most"` for caps, for example a weekly running-km limit.
+## Connecting your accounts
 
-> This uses Garmin's *unofficial* API (the same one the Garmin Connect website uses). It's fine for personal use, but it can break when Garmin changes things. If it does, upgrade the library first: `pip install -U garminconnect`.
+1. **Garmin**: run the login step above. It asks for your Garmin email, password and, if you use it, a two-factor code, then saves a login token in `~/.garminconnect`. Your password isn't stored. The first sync pulls 90 days of sleep and health data plus 2 years of activities, which takes 5–10 minutes; the dashboard fills in as it goes. After that it syncs every hour, or when you click **Sync now**.
+2. **Google Calendar**: the first start creates `backend/.env`; open it in any text editor. For each calendar, go to Google Calendar → ⚙️ **Settings** → the calendar under *Settings for my calendars* → **Integrate calendar**, and copy the **Secret address in iCal format**. Keep these addresses private.
+   - If everything is in one calendar, use `GCAL_ICS_URLS=`. Events are categorised by title: sport words → training, "lecture/study/exam…" → study, "meeting/stand-up/work…" → work, "read/book…" → reading, "lunch/groceries/friends…" → personal. Add your own words with the `*_KEYWORDS` settings.
+   - If an area has its own calendar, use `GCAL_TRAINING_ICS_URLS`, `GCAL_WORK_ICS_URLS`, `GCAL_STUDY_ICS_URLS`, `GCAL_READING_ICS_URLS` or `GCAL_PERSONAL_ICS_URLS`. Every event in it gets that category.
+   - Training sessions get their sport from the title too ("run", "Zwift", "swim", "gym", …).
+
+   Save the file and restart the dashboard.
+3. **Troubleshooting**: if the pill at the top right says **Sync failed**, hover over it for the reason. Usually the Garmin login has expired; run the login step again. The `backend/.env` file (never uploaded to GitHub) holds every other setting, with notes.
+
+<details><summary>Running the two servers by hand</summary>
+
+```bash
+cd backend && python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000
+
+# second terminal
+cd frontend && npm install && npm run dev
+```
+</details>
+
+## Weekly goals
+
+**Weekly goals** live in `backend/goals.json`. Currently: 5 gym sessions, 2 runs, 2 bike sessions, 1 swim and 5 study sessions, all minimums. Gym counts Garmin *strength* activities, and study counts finished study blocks in your calendar. Sessions still on the calendar later in the week count toward "on track". Each goal has a metric that the app measures for you:
+
+| metric | counts | options |
+|---|---|---|
+| `activity_count` / `activity_hours` / `activity_km` | Garmin activities | `sport` (one or a list), `name_contains`, `min_minutes` |
+| `calendar_hours` / `calendar_count` | calendar blocks that have ended | `category`, `title_contains` |
+| `sleep_nights` | nights meeting a bar | `min_hours`, `min_score` |
+| `step_days` | days meeting a bar | `min_steps` |
+| `manual` | you tick it on the dashboard | |
+
+Add `"mode": "at_most"` for caps, for example a weekly running-km limit.
+
+> This uses Garmin's *unofficial* API (the same one the Garmin Connect website uses). It's fine for personal use, but it can break when Garmin changes things. If it does, update the library with `backend/.venv/bin/pip install -U garminconnect` (Windows: `backend\.venv\Scripts\pip install -U garminconnect`).
 
 Raw Garmin responses are stored untouched in `backend/data/lifedashboard.sqlite3` and normalised when read. New metrics can therefore be computed from your whole history without downloading anything again.
 

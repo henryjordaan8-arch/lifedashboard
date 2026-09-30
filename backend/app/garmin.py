@@ -37,8 +37,8 @@ def connect(settings: Settings, prompt_mfa: Callable[[], str] | None = None):
     except Exception as exc:  # noqa: BLE001 - surface any login failure the same way
         if not (settings.garmin_email and settings.garmin_password):
             raise GarminNotConfigured(
-                "No cached Garmin tokens and no GARMIN_EMAIL/GARMIN_PASSWORD set. "
-                "Run `python -m scripts.garmin_login` in backend/."
+                "Not logged in to Garmin yet. Run `python3 start.py --login` "
+                "(or double-click garmin-login) once, then click Sync now."
             ) from exc
         raise
     return client

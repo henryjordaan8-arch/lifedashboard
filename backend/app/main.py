@@ -60,6 +60,9 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
                 )
             state.last_sync = datetime.now(timezone.utc).isoformat(timespec="seconds")
             state.last_error = None
+        except garmin.GarminNotConfigured as exc:
+            log.warning("%s", exc)
+            state.last_error = str(exc)
         except Exception as exc:  # noqa: BLE001
             log.exception("sync failed")
             client_holder.pop("client", None)  # force a fresh login next time

@@ -1,6 +1,6 @@
 {
   "_help": [
-    "Copy this file to goals.json and edit. The checklist ticks itself from Garmin + calendar data.",
+    "Your weekly goals (all are minimums). The checklist ticks itself from Garmin + calendar data.",
     "metric: activity_count | activity_hours | activity_km   (Garmin activities; filters: sport, name_contains, min_minutes)",
     "        calendar_hours | calendar_count                  (calendar blocks that have ended; filters: category, title_contains)",
     "        sleep_nights (min_hours, min_score) | step_days (min_steps) | manual (tick it yourself)",

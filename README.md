@@ -17,7 +17,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 **Today** tab:
 
 - **Your day**: an hour-by-hour plan from Google Calendar, colour-coded as training, work, study, reading, personal or other, with hours per area and a bar showing how the day is split. Planned training is checked against Garmin: ✓ done, or flagged if nothing matching was recorded. Garmin activities that weren't on the calendar show up too. Use ‹ › to move between days.
-- **Key sessions ahead**: sessions flagged as key. For now the rule is a title keyword or a ★ in the title (`KEY_SESSION_KEYWORDS`); it will be refined.
+- **Key sessions ahead**: your quality sessions for the next 3 weeks: tempo, threshold, VO₂ max and interval runs, and structured bike sessions (sweet spot, FTP, over-unders, or reps like `3×12min`). Base sessions (easy, long, Z2, endurance, recovery), swims and gym are never key. Put a ★ in any event title to mark it by hand, or add title words with `KEY_SESSION_KEYWORDS`.
 - **This week**: a checklist that ticks itself from Garmin and calendar data. Goals live in `backend/goals.json`; see below.
 
 ## Readiness score (v1)
@@ -70,7 +70,7 @@ npm run dev                                              # http://localhost:5173
    - If an area has its own calendar, put it in `GCAL_TRAINING_ICS_URLS`, `GCAL_WORK_ICS_URLS`, `GCAL_STUDY_ICS_URLS`, `GCAL_READING_ICS_URLS` or `GCAL_PERSONAL_ICS_URLS`. Every event in it gets that category.
    - Put mixed calendars in `GCAL_ICS_URLS`. Their events are categorised by title: sport words → training, "lecture/study/exam…" → study, "meeting/stand-up/work…" → work, "read/book…" → reading, "lunch/groceries/friends…" → personal. Add your own words with `*_KEYWORDS`.
    - The sport comes from the title too ("run", "Zwift", "swim", "gym", …).
-4. **Weekly goals**: `cp backend/goals.example.json backend/goals.json` and edit it. Each goal has a metric that the app measures for you:
+4. **Weekly goals** live in `backend/goals.json`. Currently: 5 gym sessions, 2 runs, 2 bike sessions, 1 swim and 5 study sessions, all minimums. Gym counts Garmin *strength* activities, and study counts finished study blocks in your calendar. Sessions still on the calendar later in the week count toward "on track". Each goal has a metric that the app measures for you:
 
    | metric | counts | options |
    |---|---|---|

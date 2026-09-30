@@ -183,11 +183,16 @@ export function DayTimeline({
       )}
 
       <div className="timeline" style={{ height: (endH - startH) * HOUR_PX }}>
-        {hours.map((h) => (
-          <div key={h} className="hour" style={{ top: (h - startH) * HOUR_PX }}>
-            <span className="tnum">{String(h).padStart(2, "0")}:00</span>
-          </div>
-        ))}
+        {hours.map((h) => {
+          const top = (h - startH) * HOUR_PX;
+          // Hide the hour label when the "now" marker would sit on top of it.
+          const clash = day === todayIso && Math.abs(y(nowIso) - top) < 14;
+          return (
+            <div key={h} className="hour" style={{ top }}>
+              {!clash && <span className="tnum">{String(h).padStart(2, "0")}:00</span>}
+            </div>
+          );
+        })}
         <div className="lanes">
           {blocks.map((b) => {
             const top = y(b.start);

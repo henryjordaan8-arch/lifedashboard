@@ -1,3 +1,4 @@
+import json
 from dataclasses import replace
 from datetime import date, timedelta
 
@@ -8,14 +9,21 @@ from app.main import create_app
 from app.store import Store
 
 
-def make_client():
+def make_client(goals_path=None):
     cfg = replace(Settings(), demo_mode=True, sync_interval_minutes=0, backfill_days=60)
+    if goals_path:
+        cfg = replace(cfg, goals_path=goals_path)
     app = create_app(cfg, Store(":memory:"))
     return TestClient(app)
 
 
-def test_demo_end_to_end():
-    with make_client() as c:
+def test_demo_end_to_end(tmp_path):
+    goals = tmp_path / "goals.json"
+    goals.write_text(json.dumps({"goals": [
+        {"id": "gym", "metric": "activity_count", "sport": "strength", "target": 5},
+        {"id": "review", "metric": "manual"},
+    ]}))
+    with make_client(goals) as c:
         c.post("/api/sync")
         status = c.get("/api/status").json()
         assert status["mode"] == "demo" and status["last_error"] is None
@@ -44,7 +52,7 @@ def test_demo_end_to_end():
         assert keys and all(e["key_reason"] for e in keys)
 
         wk = c.get("/api/week").json()
-        assert wk["using_example"] and wk["goals"]
+        assert not wk["using_example"] and len(wk["goals"]) == 2
         manual = next(g for g in wk["goals"] if g["metric"] == "manual")
         assert not manual["done"]
         wk = c.post("/api/week/manual", json={"week_start": wk["week_start"], "goal_id": manual["id"], "done": True}).json()

@@ -13,16 +13,19 @@ from typing import Any
 
 from .store import Store
 
-# A typical training week. weekday -> [(typeKey, title, (h, m), minutes, km, load)]
+# Weekly pattern: gym Mon-Fri, 2 runs, 2 rides, 1 swim; two quality (key) sessions.
+# weekday -> [(typeKey, title, (h, m), minutes, km, load)]
 _WEEK_PLAN: list[list[tuple]] = [
-    [("strength_training", "Mobility & core", (7, 0), 35, None, 25)],
-    [("running", "Easy run 6 km", (6, 30), 36, 6.0, 55)],
-    [("road_biking", "Zwift endurance ride", (18, 0), 60, 26.0, 70)],
-    [("running", "Tempo run 3×8min", (6, 30), 45, 8.0, 110),
-     ("strength_training", "Gym: strength & core", (18, 0), 45, None, 40)],
-    [],
-    [("running", "Long run 12 km (key)", (8, 0), 70, 12.0, 120)],
-    [("lap_swimming", "Swim — technique", (8, 30), 40, 2.0, 45)],
+    [("strength_training", "Gym: upper body", (6, 30), 55, None, 35)],
+    [("strength_training", "Gym: lower body", (6, 30), 55, None, 40),
+     ("running", "VO2 max run 5×3min", (18, 0), 50, 9.0, 130)],
+    [("strength_training", "Gym: push", (6, 30), 50, None, 35),
+     ("virtual_ride", "Zwift: sweet spot 3×12min", (18, 0), 70, 34.0, 110)],
+    [("strength_training", "Gym: pull", (6, 30), 50, None, 35),
+     ("lap_swimming", "Swim — technique", (18, 0), 45, 2.2, 45)],
+    [("strength_training", "Gym: legs & core", (6, 30), 55, None, 40)],
+    [("running", "Long run 14 km", (8, 0), 80, 14.0, 110)],
+    [("road_biking", "Endurance ride Z2", (8, 30), 120, 55.0, 100)],
 ]
 
 _WORK = [  # weekday (Mon-Fri) -> [(title, (h, m), minutes)]
@@ -45,7 +48,7 @@ _PERSONAL = {
 }
 _STUDY = {  # weekday -> [(title, (h, m), minutes)]
     0: [("Study — statistics module", (19, 30), 90)],
-    1: [("Lecture: research methods", (18, 0), 90)],
+    1: [("Lecture: research methods", (19, 30), 90)],
     3: [("Study — statistics module", (19, 30), 120)],
     5: [("Study — assignment 2", (10, 30), 120)],
     6: [("Revision — weekly notes", (15, 0), 60)],
@@ -177,7 +180,8 @@ def calendar_events(start: date, end: date) -> list[dict[str, Any]]:
             "all_day": False,
             "category": category,
             "sport": sport_from_title(title) if category == "training" else None,
-            "key_reason": key_reason(title, settings.key_session_keywords),
+            "key_reason": key_reason(title, category, sport_from_title(title) if category == "training" else None,
+                                     settings.key_session_keywords),
             "description": desc,
             "location": None,
         }
@@ -188,11 +192,10 @@ def calendar_events(start: date, end: date) -> list[dict[str, Any]]:
         wd = d.weekday()
         for _, title, hm, minutes, _, _ in _WEEK_PLAN[wd]:
             desc = {
-                "Mobility & core": "Hips, ankles, plank series.",
-                "Easy run 6 km": "Conversational pace, strides at the end.",
-                "Tempo run 3×8min": "10min WU, 3×8min @ threshold w/ 2min jog, CD.",
-                "Long run 12 km (key)": "Steady, negative split the last 3 km.",
-                "Zwift endurance ride": "Z2, cadence 85–95.",
+                "VO2 max run 5×3min": "15min WU, 5×3min @ 3k pace w/ 2min jog, CD.",
+                "Zwift: sweet spot 3×12min": "3×12min @ 90% FTP, 5min easy between.",
+                "Long run 14 km": "Easy, conversational. Fuel at 45min.",
+                "Endurance ride Z2": "Steady Z2, cadence 85–95.",
             }.get(title)
             out.append(ev(d, title, hm, minutes, "training", desc))
         if wd < 5:
@@ -204,7 +207,5 @@ def calendar_events(start: date, end: date) -> list[dict[str, Any]]:
 
     # A couple of one-off key dates relative to "now" so there's always something ahead.
     today = date.today()
-    out.append(ev(today + timedelta(days=9), "parkrun 5 km — race effort", (8, 0), 45, "training",
-                  "Time-trial to check fitness."))
     out.append(ev(today + timedelta(days=12), "Statistics exam", (9, 0), 120, "study"))
     return [e for e in out if start.isoformat() <= e["start"][:10] < end.isoformat()]

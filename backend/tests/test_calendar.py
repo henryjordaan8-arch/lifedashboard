@@ -65,9 +65,20 @@ def test_classify():
     assert classify("Choir", {"study": ["choir"]}) == "study"
 
 
-def test_key_reason():
-    kws = ["key", "race", "long run"]
-    assert key_reason("Long run 20km", kws) == "“long run” in title"
-    assert key_reason("★ Threshold", kws) == "starred"
-    assert key_reason("Keyboard practice", kws) is None  # whole words only
-    assert key_reason("Easy run", kws) is None
+def test_key_sessions_are_quality_run_and_bike_work():
+    def key(title, category="training"):
+        from app.normalize import sport_from_title
+        return key_reason(title, category, sport_from_title(title) if category == "training" else None)
+
+    assert key("Tempo run 3×8min") == "Tempo run"
+    assert key("VO2 max 5x3min") == "VO₂ max session"
+    assert key("Track intervals 6×800m") == "Interval run"
+    assert key("Zwift: sweet spot 3×12min") == "Structured ride"
+    assert key("FTP test") == "Structured ride"
+    assert key("Bike over-unders") == "Structured ride"
+    # base sessions are never key
+    for base in ("Easy run 6 km", "Long run 20km", "Endurance ride Z2", "Recovery spin", "Swim 10×100m", "Gym: legs"):
+        assert key(base) is None, base
+    assert key("Statistics exam", "study") is None
+    assert key("★ Parkrun") == "starred"
+    assert key_reason("Hill session", "training", "run", ["hill"]) == "“hill” in title"

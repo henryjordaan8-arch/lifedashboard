@@ -79,7 +79,7 @@ export function WeeklyChecklist({
                 {!manual && <Progress g={g} />}
                 <div className="g-status" style={{ color: st.color }}>
                   <span aria-hidden>{st.icon}</span> {st.label}
-                  {g.planned > 0 && !g.done && <span className="muted"> · {fmt(g.planned)} {g.unit} still scheduled</span>}
+                  {g.planned > 0 && !g.done && <span className="muted"> · {fmt(g.planned)} {g.planned === 1 ? g.unit.replace(/s$/, "") : g.unit} still scheduled</span>}
                   {manual && !g.done && <span className="muted"> · tick it yourself</span>}
                 </div>
               </div>

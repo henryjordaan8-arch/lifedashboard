@@ -154,6 +154,14 @@ def evaluate_goal(
             else:
                 progress += (a["distance_m"] or 0) / 1000
             items.append(f"{a['date']} · {a['name']}")
+        if metric == "activity_count":
+            # Sessions still on the calendar this week count toward "on track".
+            sport = goal.get("sport")
+            sports = sport if isinstance(sport, list) else [sport] if sport else None
+            planned = float(sum(
+                1 for e in events
+                if e["category"] == "training" and e["end"] > now_iso and (not sports or e.get("sport") in sports)
+            ))
     elif metric in ("calendar_hours", "calendar_count"):
         for e in filter(_event_filter(goal), events):
             amount = 1.0 if metric == "calendar_count" else event_hours(e)

@@ -61,3 +61,11 @@ def test_manual_and_sleep_goals():
     sleep = {"2026-09-28": {"duration_s": 7.5 * 3600, "score": 80}, "2026-09-29": {"duration_s": 6 * 3600, "score": 70}}
     r = evaluate({"metric": "sleep_nights", "min_hours": 7, "target": 5}, datetime(2026, 9, 30), sleep=sleep)
     assert r["progress"] == 1
+
+
+def test_activity_count_counts_scheduled_sessions_as_planned():
+    runs = [act(1, "2026-09-28T07:00")]
+    events = [ev("Tempo", "2026-10-02T18:00", "2026-10-02T19:00"),
+              ev("Ride", "2026-10-03T08:00", "2026-10-03T10:00", sport="ride")]
+    r = evaluate({"metric": "activity_count", "sport": "run", "target": 2}, datetime(2026, 9, 30, 12), runs, events)
+    assert r["progress"] == 1 and r["planned"] == 1 and r["status"] == "on_track"

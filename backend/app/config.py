@@ -42,7 +42,6 @@ class Settings:
     gcal_personal_urls: list[str] = field(default_factory=lambda: _list("GCAL_PERSONAL_ICS_URLS"))
     key_session_keywords: list[str] = field(
         default_factory=lambda: _list("KEY_SESSION_KEYWORDS")
-        or ["key", "race", "test", "exam", "deadline", "long run", "tempo", "interval"]
     )
     goals_path: Path = field(
         default_factory=lambda: BACKEND_DIR / os.getenv("GOALS_PATH", "goals.json")

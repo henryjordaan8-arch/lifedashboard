@@ -74,12 +74,29 @@ def classify(title: str, extra: dict[str, list[str]] | None = None) -> str:
     return "other"
 
 
-def key_reason(title: str, keywords: list[str]) -> str | None:
-    """Why an event counts as a key session (placeholder rule: title keywords)."""
-    text = title.lower()
+# Key sessions = quality run/bike work. Base sessions (easy, long, Z2, endurance,
+# recovery) are never key unless the title also describes quality work.
+_KEY_RULES = [  # (pattern, reason for a run, reason for a ride)
+    (r"v\.?o\s?2|vo₂", "VO₂ max session", "VO₂ max session"),
+    (r"\btempo\b", "Tempo run", "Tempo ride"),
+    (r"\bthreshold\b|\blt\s?\d|\blactate\b", "Threshold session", "Threshold session"),
+    (r"sweet\s?spot|\bftp\b|over[\s-]?unders?|\bstructured\b", "Structured ride", "Structured ride"),
+    (r"\bintervals?\b|\brepeats\b|\breps\b|\bfartlek\b|\btrack\b|\d+\s*[x×]\s*\d+",
+     "Interval run", "Structured ride"),
+]
+
+
+def key_reason(title: str, category: str, sport: str | None, keywords: list[str] | None = None) -> str | None:
+    """Why a planned session counts as "key", or None for base / non-training events."""
     if "★" in title or "⭐" in title:
         return "starred"
-    for w in keywords:
+    if category != "training" or sport in ("swim", "strength"):
+        return None
+    text = title.lower()
+    for pattern, run_reason, ride_reason in _KEY_RULES:
+        if re.search(pattern, text):
+            return ride_reason if sport == "ride" else run_reason
+    for w in keywords or []:
         if _has_word(text, [w]):
             return f"“{w}” in title"
     return None
@@ -113,7 +130,7 @@ def parse_events(
                 "all_day": all_day,
                 "category": cat,
                 "sport": sport,
-                "key_reason": key_reason(title, key_keywords or []),
+                "key_reason": key_reason(title, cat, sport, key_keywords),
                 "description": str(ev.get("DESCRIPTION") or "").strip() or None,
                 "location": str(ev.get("LOCATION") or "").strip() or None,
             }

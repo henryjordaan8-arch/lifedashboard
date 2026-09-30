@@ -21,7 +21,7 @@ _SPORT_BY_TYPE_KEY = [
 
 _SPORT_BY_TITLE = [
     ("run", r"\b(run|runs|running|jog|tempo|intervals?|parkrun|fartlek|strides|long run|easy run)\b"),
-    ("ride", r"\b(ride|bike|cycl\w*|zwift|spin|trainer|turbo)\b"),
+    ("ride", r"\b(ride|bike|cycl\w*|zwift|spin|trainer|turbo|ftp|sweet\s?spot|over[\s-]?unders?)\b"),
     ("swim", r"\b(swim\w*|pool|open water)\b"),
     ("strength", r"\b(strength|gym|weights?|lift\w*|core|mobility|s&c)\b"),
 ]

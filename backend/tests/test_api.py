@@ -28,7 +28,7 @@ def test_demo_end_to_end():
         start = (today - timedelta(days=30)).isoformat()
         acts = c.get(f"/api/activities?start={start}&end={today.isoformat()}").json()["activities"]
         assert len(acts) > 10
-        assert {a["sport"] for a in acts} <= {"run", "ride", "swim", "strength", "rehab", "other"}
+        assert {a["sport"] for a in acts} <= {"run", "ride", "swim", "strength", "other"}
 
         up = c.get("/api/upcoming?days=7").json()
         assert up["configured"] and len(up["events"]) >= 4
@@ -37,8 +37,8 @@ def test_demo_end_to_end():
 
         day = c.get("/api/day").json()
         cats = {e["category"] for e in day["events"]}
-        assert day["configured"] and cats <= {"training", "work", "study", "other"}
-        assert set(day["hours"]) == {"training", "work", "study", "other"}
+        assert day["configured"] and cats <= {"training", "work", "study", "reading", "personal", "other"}
+        assert set(day["hours"]) == {"training", "work", "study", "reading", "personal", "other"}
 
         keys = c.get("/api/key-sessions?days=21").json()["events"]
         assert keys and all(e["key_reason"] for e in keys)
@@ -57,7 +57,7 @@ def test_demo_end_to_end():
         assert not training or any(e["completed_by"] for e in training)
 
         r = c.get("/api/readiness").json()
-        assert r["score"] is None
+        assert 0 <= r["score"]["value"] <= 100 and r["score"]["components"]
         keys = {i["key"] for i in r["inputs"]}
         assert {"hrv", "resting_hr", "sleep_score"} <= keys
         hrv = next(i for i in r["inputs"] if i["key"] == "hrv")
@@ -65,7 +65,7 @@ def test_demo_end_to_end():
         assert len(hrv["history"]) == 14
         assert r["load"]["chronic"] > 0
         assert r["fitness"]["vo2max_run"] > 40
-        assert r["recent"]["sessions_7d"] > 0 and r["recent"]["rehab_7d"] > 0
+        assert r["recent"]["sessions_7d"] > 0
 
 
 def test_activities_rejects_bad_dates():

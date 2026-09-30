@@ -3,7 +3,7 @@ import { addDays, CATEGORY_LABEL, clock, duration, isoDay, km, parseDay, SPORT_L
 import type { Activity, CalEvent, Category, DayPlan } from "../types";
 
 const HOUR_PX = 52;
-const CATS: Category[] = ["training", "work", "study", "other"];
+const CATS: Category[] = ["training", "work", "study", "reading", "personal", "other"];
 
 interface Block {
   id: string;
@@ -40,7 +40,7 @@ function eventBlock(e: CalEvent, nowIso: string): Omit<Block, "lane" | "lanes"> 
     start: e.start,
     end: e.end,
     category: e.category,
-    sub: e.category === "training" ? SPORT_LABEL[e.sport ?? "other"] : CATEGORY_LABEL[e.category],
+    sub: e.category === "training" ? `Training · ${SPORT_LABEL[e.sport ?? "other"]}` : CATEGORY_LABEL[e.category],
     status,
     key: e.key_reason,
     desc: e.description,
@@ -118,7 +118,8 @@ export function DayTimeline({
   const y = (iso: string) => ((iso.slice(0, 10) > day ? 24 * 60 : minutes(iso)) - startH * 60) * (HOUR_PX / 60);
   const hours = Array.from({ length: endH - startH + 1 }, (_, i) => startH + i);
 
-  const hoursTotal = plan?.hours ?? { training: 0, work: 0, study: 0, other: 0 };
+  const hoursTotal: Record<Category, number> = { training: 0, work: 0, study: 0, reading: 0, personal: 0, other: 0, ...plan?.hours };
+  const scheduled = CATS.reduce((sum, c) => sum + hoursTotal[c], 0);
   const label =
     day === todayIso
       ? "Today"
@@ -155,6 +156,14 @@ export function DayTimeline({
           </div>
         ))}
       </div>
+      {scheduled > 0 && (
+        <div className="alloc" role="img" aria-label="Share of scheduled time per category">
+          {CATS.filter((c) => hoursTotal[c] > 0).map((c) => (
+            <div key={c} style={{ flex: hoursTotal[c], background: `var(--cat-${c})` }} title={`${CATEGORY_LABEL[c]} · ${duration(hoursTotal[c] * 3600)}`} />
+          ))}
+          <div className="alloc-free" style={{ flex: Math.max(0, 16 - scheduled) }} title="Unscheduled (of a 16 h waking day)" />
+        </div>
+      )}
 
       {plan && !plan.configured && (
         <div className="empty">
@@ -188,8 +197,9 @@ export function DayTimeline({
             return (
               <div
                 key={b.id}
-                className={`block cat-${b.category} ${past ? "past" : ""} ${b.key ? "key" : ""}`}
+                className={`block ${past ? "past" : ""} ${b.key ? "key" : ""}`}
                 style={{
+                  ["--c" as string]: `var(--cat-${b.category})`,
                   top,
                   height,
                   left: `calc(${(b.lane / b.lanes) * 100}% + 2px)`,

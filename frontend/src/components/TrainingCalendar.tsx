@@ -4,7 +4,7 @@ import { addDays, clock, duration, isoDay, km, pace, parseDay, SPORT_LABEL } fro
 import type { Activity, CalEvent, Sport } from "../types";
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const SPORT_ORDER: Sport[] = ["run", "ride", "swim", "strength", "rehab", "other"];
+const SPORT_ORDER: Sport[] = ["run", "ride", "swim", "strength", "other"];
 
 function monthGrid(month: Date): Date[] {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);

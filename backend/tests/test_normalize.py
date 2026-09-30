@@ -63,15 +63,6 @@ def test_readiness_takes_morning_entry():
     assert normalize.readiness("2024-09-30", raw)["score"] == 78
 
 
-def test_rehab_detected_from_title_and_activity_name():
-    assert normalize.sport_from_title("Knee rehab — physio") == "rehab"
-    a = normalize.activity({
-        "activityId": 2, "startTimeLocal": "2024-09-30 07:00:00",
-        "activityName": "Knee Rehab", "activityType": {"typeKey": "strength_training"},
-    })
-    assert a["sport"] == "rehab"
-
-
 def test_vo2max():
     raw = [{"generic": {"vo2MaxPreciseValue": 51.3}, "cycling": None}]
     assert normalize.vo2max("2024-09-30", raw) == {"date": "2024-09-30", "run": 51.3, "ride": None}

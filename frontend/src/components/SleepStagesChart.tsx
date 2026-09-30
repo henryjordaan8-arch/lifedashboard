@@ -10,7 +10,7 @@ const STAGES = [
   { key: "awake_s", label: "Awake", color: "var(--stage-awake)" },
 ] as const;
 
-const H = 180;
+const H = 250;
 const PAD = { top: 10, right: 4, bottom: 22, left: 26 };
 const GAP = 2;
 

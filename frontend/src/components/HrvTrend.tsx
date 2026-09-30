@@ -3,7 +3,7 @@ import { parseDay } from "../format";
 import type { SleepNight } from "../types";
 import { useWidth } from "../useWidth";
 
-const H = 180;
+const H = 250;
 const PAD = { top: 12, right: 12, bottom: 22, left: 28 };
 
 /** Overnight HRV with Garmin's personal "balanced" range as a band. */

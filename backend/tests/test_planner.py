@@ -23,13 +23,7 @@ def test_planned_session_matched_to_activity():
     assert done["Easy run"]["id"] == 1
     assert done["Gym"] is None and done["Meeting"] is None
     assert [a["id"] for a in plan["unplanned_activities"]] == [2]
-    assert plan["hours"] == {"training": 1.75, "work": 1.0, "study": 0.0, "other": 0.0}
-
-
-def test_rehab_plan_matches_strength_activity():
-    events = [ev("Knee rehab", "2026-09-28T07:00", "2026-09-28T07:30", sport="rehab")]
-    plan = planner.day_plan(date(2026, 9, 28), events, [act(5, "2026-09-28T07:05", sport="strength", km=None)])
-    assert plan["events"][0]["completed_by"]["id"] == 5
+    assert plan["hours"] == {"training": 1.75, "work": 1.0, "study": 0.0, "reading": 0.0, "personal": 0.0, "other": 0.0}
 
 
 def evaluate(goal, now, activities=(), events=(), sleep=None, manual=None):

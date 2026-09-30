@@ -4,17 +4,17 @@
     "metric: activity_count | activity_hours | activity_km   (Garmin activities; filters: sport, name_contains, min_minutes)",
     "        calendar_hours | calendar_count                  (calendar blocks that have ended; filters: category, title_contains)",
     "        sleep_nights (min_hours, min_score) | step_days (min_steps) | manual (tick it yourself)",
-    "sport: run | ride | swim | strength | rehab | other, or a list like [\"run\", \"ride\"]",
-    "category: training | work | study | other",
-    "mode: at_least (default) or at_most, e.g. a running-volume cap while the knee comes back"
+    "category: training | work | study | reading | personal | other",
+    "sport: run | ride | swim | strength | other, or a list like [\"run\", \"ride\"]",
+    "mode: at_least (default) or at_most, e.g. a weekly running-km cap"
   ],
   "goals": [
-    { "id": "rehab", "label": "Knee rehab sessions", "metric": "activity_count", "sport": ["rehab", "strength"], "target": 4 },
     { "id": "runs", "label": "Runs", "metric": "activity_count", "sport": "run", "target": 3 },
-    { "id": "run_cap", "label": "Running volume cap (knee)", "metric": "activity_km", "sport": "run", "target": 25, "mode": "at_most" },
+    { "id": "strength", "label": "Strength sessions", "metric": "activity_count", "sport": "strength", "target": 2 },
     { "id": "training_hours", "label": "Training time", "metric": "activity_hours", "target": 6 },
     { "id": "study", "label": "Study", "metric": "calendar_hours", "category": "study", "target": 10 },
-    { "id": "work", "label": "Focused work", "metric": "calendar_hours", "category": "work", "target": 30 },
+    { "id": "reading", "label": "Reading", "metric": "calendar_hours", "category": "reading", "target": 5 },
+    { "id": "work", "label": "Focused work", "metric": "calendar_hours", "category": "work", "title_contains": "deep work", "target": 20 },
     { "id": "sleep", "label": "Nights with 7 h+ sleep", "metric": "sleep_nights", "min_hours": 7, "target": 5 },
     { "id": "weekly_review", "label": "Plan next week", "metric": "manual" }
   ]

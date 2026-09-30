@@ -1,9 +1,11 @@
-"""Inputs for the training readiness metric.
+"""Training readiness: a 0-100 score built from your own baselines.
 
-The composite score itself is deliberately NOT defined yet — we'll design it
-together. For now this computes each candidate ingredient and how today's value
-compares with your own recent baseline, which is what any sensible score will
-be built from.
+Every recovery input is compared with *your* last 28 days (a z-score), so
+"good" means good for you, not for an average person. Training load, recent
+hard sessions and the VO2 max trend are folded in, then a few safety caps
+stop one great metric from hiding a clearly bad one.
+
+This is version 1 — the weights and thresholds below are meant to be tuned.
 """
 
 from __future__ import annotations
@@ -25,6 +27,115 @@ INPUTS: list[tuple[str, str, str, int]] = [
     ("body_battery", "Body Battery at wake", "", +1),
     ("sleep_stress", "Overnight stress", "", -1),
 ]
+
+
+# ---- score configuration (v1) -------------------------------------------------
+SCORE_VERSION = 1
+WEIGHTS = {
+    # recovery (80)
+    "hrv": 25,
+    "resting_hr": 15,
+    "sleep_score": 15,
+    "sleep_hours": 10,
+    "body_battery": 10,
+    "sleep_stress": 5,
+    # training (20)
+    "load": 10,      # acute:chronic load ratio
+    "recent": 5,     # days since the last hard session
+    "fitness": 5,    # VO2 max trend
+}
+COMPONENT_LABELS = {
+    "load": "Training load (7d vs 28d)",
+    "recent": "Days since hard session",
+    "fitness": "VO₂ max trend",
+}
+BANDS = [  # (min score, key, label)
+    (75, "high", "Ready for a hard session"),
+    (55, "good", "Train as planned"),
+    (35, "low", "Take it easier today"),
+    (0, "rest", "Prioritise recovery"),
+]
+
+
+def _clip(x: float, lo: float = 0.0, hi: float = 100.0) -> float:
+    return max(lo, min(hi, x))
+
+
+def _lerp(x: float, x0: float, x1: float, y0: float, y1: float) -> float:
+    return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+
+
+def load_points(ratio: float | None) -> float | None:
+    """Acute:chronic ratio -> 0-100. Sweet spot 0.8-1.3; spikes cost points."""
+    if ratio is None:
+        return None
+    if ratio < 0.8:
+        return 75.0  # fresh, just not building
+    if ratio <= 1.3:
+        return 85.0
+    if ratio <= 1.5:
+        return _lerp(ratio, 1.3, 1.5, 85, 50)
+    return _clip(_lerp(ratio, 1.5, 2.0, 50, 10))
+
+
+def recent_points(days_since_hard: int | None) -> float:
+    if days_since_hard is None or days_since_hard >= 3:
+        return 85.0
+    return {0: 30.0, 1: 35.0, 2: 60.0}[days_since_hard]
+
+
+def fitness_points(change_28d: float | None) -> float | None:
+    return None if change_28d is None else _clip(50 + 25 * change_28d)
+
+
+def score(inputs: list[dict], load: dict, recent: dict, fitness_info: dict | None) -> dict[str, Any] | None:
+    """Combine everything into one 0-100 number, with a breakdown of how it was made."""
+    comps: list[dict[str, Any]] = []
+    for i in inputs:
+        if i["effect"] is not None:
+            # +2.5 sigma better than usual -> 100, usual -> 50, 2.5 sigma worse -> 0
+            comps.append({"key": i["key"], "label": i["label"], "points": _clip(50 + 20 * i["effect"])})
+    for key, pts in (
+        ("load", load_points(load.get("ratio"))),
+        ("recent", recent_points(recent.get("days_since_hard"))),
+        ("fitness", fitness_points(fitness_info["change_28d"] if fitness_info else None)),
+    ):
+        if pts is not None:
+            comps.append({"key": key, "label": COMPONENT_LABELS[key], "points": pts})
+
+    recovery = [c for c in comps if c["key"] in ("hrv", "resting_hr", "sleep_score", "sleep_hours")]
+    if len(recovery) < 2:
+        return None  # not enough baseline yet to say anything useful
+
+    total_w = sum(WEIGHTS[c["key"]] for c in comps)
+    for c in comps:
+        c["weight"] = round(WEIGHTS[c["key"]] / total_w * 100, 1)  # re-normalised if inputs are missing
+        c["points"] = round(c["points"])
+        c["contribution"] = round(c["points"] * WEIGHTS[c["key"]] / total_w, 1)
+    value = sum(c["contribution"] for c in comps)
+
+    # Safety caps: a clearly bad signal shouldn't be averaged away.
+    caps = []
+    by_key = {i["key"]: i for i in inputs}
+    hrv = by_key.get("hrv", {})
+    if hrv.get("effect") is not None and hrv["effect"] <= -1.5:
+        caps.append({"reason": "HRV well below your normal", "max": 50})
+    hours = by_key.get("sleep_hours", {}).get("today")
+    if hours is not None and hours < 5:
+        caps.append({"reason": "Under 5 h of sleep", "max": 55})
+    for c in caps:
+        value = min(value, c["max"])
+
+    value = round(value)
+    band = next(b for b in BANDS if value >= b[0])
+    return {
+        "value": value,
+        "band": band[1],
+        "label": band[2],
+        "components": sorted(comps, key=lambda c: -c["weight"]),
+        "caps": caps,
+        "version": SCORE_VERSION,
+    }
 
 
 def _pick(*values: Any) -> float | None:
@@ -82,7 +193,7 @@ def training_load(activities: list[dict], today: date) -> dict[str, Any]:
 
 
 def recent_sessions(activities: list[dict], today: date) -> dict[str, Any]:
-    """What the last days of training looked like — intensity, rehab, and running ramp."""
+    """What the last days of training looked like."""
     before = [a for a in activities if a["date"] < today.isoformat()]
     before.sort(key=lambda a: a["start"], reverse=True)
     week_ago = (today - timedelta(days=7)).isoformat()
@@ -91,20 +202,10 @@ def recent_sessions(activities: list[dict], today: date) -> dict[str, Any]:
     hard = next((a for a in before if is_hard(a)), None)
     days_since_hard = (today - date.fromisoformat(hard["date"])).days if hard else None
 
-    # Running ramp: last 7 days vs the average week of the 4 weeks before that.
-    # The classic return-from-injury guardrail is roughly +10 % per week.
-    run_km = lambda xs: sum((a.get("distance_m") or 0) for a in xs if a["sport"] == "run") / 1000  # noqa: E731
-    prior_start = (today - timedelta(days=35)).isoformat()
-    prior = [a for a in before if prior_start <= a["date"] < week_ago]
-    run_7d, run_prior_week = run_km(last7), run_km(prior) / 4
     return {
         "sessions_7d": len(last7),
         "hard_7d": sum(1 for a in last7 if is_hard(a)),
-        "rehab_7d": sum(1 for a in last7 if a["sport"] == "rehab"),
         "days_since_hard": days_since_hard,
-        "run_km_7d": round(run_7d, 1),
-        "run_km_prior_week_avg": round(run_prior_week, 1),
-        "run_ramp_pct": round((run_7d / run_prior_week - 1) * 100) if run_prior_week > 0 else None,
         "last": [
             {k: a.get(k) for k in ("id", "name", "sport", "date", "duration_s", "distance_m",
                                    "training_load", "aerobic_te", "anaerobic_te")}
@@ -172,13 +273,16 @@ def build(
             }
         )
 
+    load = training_load(activities, today)
+    recent = recent_sessions(activities, today)
+    fit = fitness(vo2_by_day or {}, today)
     return {
         "date": today_iso,
-        "score": None,  # composite formula still to be designed
+        "score": score(inputs, load, recent, fit),
         "inputs": inputs,
-        "load": training_load(activities, today),
-        "recent": recent_sessions(activities, today),
-        "fitness": fitness(vo2_by_day or {}, today),
+        "load": load,
+        "recent": recent,
+        "fitness": fit,
         "garmin": garmin_readiness,
         "baseline_days": BASELINE_DAYS,
     }

@@ -13,18 +13,16 @@ from typing import Any
 
 from .store import Store
 
-# A return-from-knee-rehab week: rehab most days, short easy runs building back
-# up, low-impact cardio. weekday -> [(typeKey, title, (h, m), minutes, km, load)]
+# A typical training week. weekday -> [(typeKey, title, (h, m), minutes, km, load)]
 _WEEK_PLAN: list[list[tuple]] = [
-    [("strength_training", "Knee rehab — physio exercises", (7, 0), 35, None, 25)],
-    [("running", "Easy run 5 km", (6, 30), 32, 5.0, 50)],
-    [("road_biking", "Zwift endurance ride", (18, 0), 60, 26.0, 70),
-     ("strength_training", "Knee rehab — physio exercises", (7, 0), 30, None, 20)],
-    [("strength_training", "Gym: strength & core", (18, 0), 45, None, 40)],
+    [("strength_training", "Mobility & core", (7, 0), 35, None, 25)],
+    [("running", "Easy run 6 km", (6, 30), 36, 6.0, 55)],
+    [("road_biking", "Zwift endurance ride", (18, 0), 60, 26.0, 70)],
+    [("running", "Tempo run 3×8min", (6, 30), 45, 8.0, 110),
+     ("strength_training", "Gym: strength & core", (18, 0), 45, None, 40)],
     [],
-    [("running", "Long run 8 km (key)", (8, 0), 50, 8.0, 85)],
-    [("lap_swimming", "Swim — technique", (8, 30), 40, 2.0, 45),
-     ("strength_training", "Knee rehab — physio exercises", (17, 0), 30, None, 20)],
+    [("running", "Long run 12 km (key)", (8, 0), 70, 12.0, 120)],
+    [("lap_swimming", "Swim — technique", (8, 30), 40, 2.0, 45)],
 ]
 
 _WORK = [  # weekday (Mon-Fri) -> [(title, (h, m), minutes)]
@@ -34,6 +32,17 @@ _WORK = [  # weekday (Mon-Fri) -> [(title, (h, m), minutes)]
     [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 180), ("Work — planning meeting", (14, 0), 90)],
     [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 150), ("Work — weekly review", (13, 30), 60)],
 ]
+_READING = {  # weekday -> [(title, (h, m), minutes)]
+    0: [("Reading — novel", (21, 30), 40)], 1: [("Reading — novel", (21, 30), 40)],
+    2: [("Reading — non-fiction", (20, 30), 60)], 3: [("Reading — novel", (22, 0), 30)],
+    4: [("Reading — novel", (21, 30), 45)], 5: [("Reading in the park", (15, 0), 90)],
+    6: [("Reading — non-fiction", (20, 0), 60)],
+}
+_PERSONAL = {
+    0: [("Lunch", (12, 30), 60)], 1: [("Lunch", (12, 30), 60)], 2: [("Lunch", (12, 30), 60)],
+    3: [("Lunch", (12, 30), 60)], 4: [("Lunch", (12, 30), 60), ("Dinner with friends", (19, 0), 150)],
+    5: [("Groceries & errands", (12, 30), 90)], 6: [("Family lunch", (12, 30), 120)],
+}
 _STUDY = {  # weekday -> [(title, (h, m), minutes)]
     0: [("Study — statistics module", (19, 30), 90)],
     1: [("Lecture: research methods", (18, 0), 90)],
@@ -153,7 +162,7 @@ def seed(store: Store, days: int, today: date | None = None, rng_seed: int = 7) 
 
 
 def calendar_events(start: date, end: date) -> list[dict[str, Any]]:
-    """Sample Google Calendar events (training, work, study) for start <= day < end."""
+    """Sample Google Calendar events for start <= day < end."""
     from .calendar_feed import key_reason
     from .config import settings
     from .normalize import sport_from_title
@@ -179,20 +188,23 @@ def calendar_events(start: date, end: date) -> list[dict[str, Any]]:
         wd = d.weekday()
         for _, title, hm, minutes, _, _ in _WEEK_PLAN[wd]:
             desc = {
-                "Knee rehab — physio exercises": "Step-downs, Spanish squats, single-leg RDL, TKEs. Pain ≤ 3/10.",
-                "Easy run 5 km": "Flat route, conversational pace. Stop if knee pain > 3/10.",
-                "Long run 8 km (key)": "Longest run since rehab. Soft surface, walk breaks allowed.",
-                "Zwift endurance ride": "Z2, high cadence, low resistance.",
+                "Mobility & core": "Hips, ankles, plank series.",
+                "Easy run 6 km": "Conversational pace, strides at the end.",
+                "Tempo run 3×8min": "10min WU, 3×8min @ threshold w/ 2min jog, CD.",
+                "Long run 12 km (key)": "Steady, negative split the last 3 km.",
+                "Zwift endurance ride": "Z2, cadence 85–95.",
             }.get(title)
             out.append(ev(d, title, hm, minutes, "training", desc))
         if wd < 5:
             out += [ev(d, t, hm, m, "work") for t, hm, m in _WORK[wd]]
         out += [ev(d, t, hm, m, "study") for t, hm, m in _STUDY.get(wd, [])]
+        out += [ev(d, t, hm, m, "reading") for t, hm, m in _READING.get(wd, [])]
+        out += [ev(d, t, hm, m, "personal") for t, hm, m in _PERSONAL.get(wd, [])]
         d += timedelta(days=1)
 
     # A couple of one-off key dates relative to "now" so there's always something ahead.
     today = date.today()
-    out.append(ev(today + timedelta(days=9), "Physio assessment — knee test", (16, 0), 45, "training",
-                  "Hop tests + strength benchmarks to clear return to running."))
+    out.append(ev(today + timedelta(days=9), "parkrun 5 km — race effort", (8, 0), 45, "training",
+                  "Time-trial to check fitness."))
     out.append(ev(today + timedelta(days=12), "Statistics exam", (9, 0), 120, "study"))
     return [e for e in out if start.isoformat() <= e["start"][:10] < end.isoformat()]

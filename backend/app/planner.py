@@ -7,6 +7,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from .calendar_feed import CATEGORIES
+
 MATCH_WINDOW_H = 4  # a Garmin activity within this many hours of a planned session completes it
 
 
@@ -23,8 +25,7 @@ def event_hours(ev: dict[str, Any]) -> float:
 def _sports_match(planned: str | None, actual: str) -> bool:
     if planned in (None, "other") or actual == "other":
         return True
-    # Rehab exercises are often logged as a strength activity, and vice versa.
-    return planned == actual or {planned, actual} == {"rehab", "strength"}
+    return planned == actual
 
 
 def match_activities(events: list[dict], activities: list[dict]) -> None:
@@ -57,7 +58,7 @@ def day_plan(day: date, events: list[dict], activities: list[dict]) -> dict[str,
     todays = [e for e in events if e["start"][:10] == day_iso or (e["all_day"] and e["start"] <= day_iso < e["end"])]
     acts = [a for a in activities if a["date"] == day_iso]
     match_activities(todays, acts)
-    totals = {c: 0.0 for c in ("training", "work", "study", "other")}
+    totals = {c: 0.0 for c in CATEGORIES}
     for e in todays:
         totals[e["category"]] += event_hours(e)
     matched = {e["completed_by"]["id"] for e in todays if e.get("completed_by")}

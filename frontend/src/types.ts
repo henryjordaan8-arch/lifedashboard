@@ -1,5 +1,5 @@
-export type Sport = "run" | "ride" | "swim" | "strength" | "rehab" | "other";
-export type Category = "training" | "work" | "study" | "other";
+export type Sport = "run" | "ride" | "swim" | "strength" | "other";
+export type Category = "training" | "work" | "study" | "reading" | "personal" | "other";
 
 export interface Status {
   mode: "demo" | "garmin";
@@ -125,20 +125,33 @@ export interface ReadinessInput {
   history: { date: string; value: number | null }[];
 }
 
+export interface ScoreComponent {
+  key: string;
+  label: string;
+  points: number; // 0-100, 50 = neutral
+  weight: number; // % of the score
+  contribution: number;
+}
+
+export interface ReadinessScore {
+  value: number;
+  band: "high" | "good" | "low" | "rest";
+  label: string;
+  components: ScoreComponent[];
+  caps: { reason: string; max: number }[];
+  version: number;
+}
+
 export interface Readiness {
   date: string;
-  score: number | null;
+  score: ReadinessScore | null;
   inputs: ReadinessInput[];
   load: { acute: number; chronic: number; ratio: number | null; yesterday: number };
   garmin: { score: number | null; level: string | null; feedback: string | null } | null;
   recent: {
     sessions_7d: number;
     hard_7d: number;
-    rehab_7d: number;
     days_since_hard: number | null;
-    run_km_7d: number;
-    run_km_prior_week_avg: number;
-    run_ramp_pct: number | null;
     last: RecentActivity[];
   };
   fitness: {

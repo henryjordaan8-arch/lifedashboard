@@ -21,11 +21,15 @@ from .normalize import sport_from_title
 
 log = logging.getLogger(__name__)
 
-CATEGORIES = ("training", "work", "study", "other")
+CATEGORIES = ("training", "work", "study", "reading", "personal", "other")
 
 DEFAULT_KEYWORDS = {
     "study": ["study", "lecture", "class", "exam", "revision", "revise", "tutorial", "assignment",
-              "seminar", "lab", "course", "reading", "homework", "thesis"],
+              "seminar", "lab", "course", "homework", "thesis"],
+    "reading": ["read", "reading", "book", "kindle", "audiobook"],
+    "personal": ["breakfast", "lunch", "dinner", "meal", "groceries", "shopping", "errands", "doctor",
+                 "dentist", "haircut", "family", "friends", "social", "date night", "chores", "cleaning",
+                 "cook", "cooking", "commute", "travel"],
     "work": ["work", "meeting", "call", "standup", "stand-up", "sync", "1:1", "shift", "client",
              "interview", "review", "office", "deadline"],
     "training": [],  # anything whose title maps to a sport counts as training
@@ -64,7 +68,7 @@ def classify(title: str, extra: dict[str, list[str]] | None = None) -> str:
     extra = extra or {}
     if sport_from_title(title) != "other" or _has_word(text, extra.get("training", [])):
         return "training"
-    for cat in ("study", "work"):
+    for cat in ("study", "work", "reading", "personal"):
         if _has_word(text, DEFAULT_KEYWORDS[cat] + extra.get(cat, [])):
             return cat
     return "other"

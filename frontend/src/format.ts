@@ -5,7 +5,6 @@ export const SPORT_LABEL: Record<Sport, string> = {
   ride: "Ride",
   swim: "Swim",
   strength: "Strength",
-  rehab: "Rehab",
   other: "Other",
 };
 
@@ -13,6 +12,8 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   training: "Training",
   work: "Work",
   study: "Study",
+  reading: "Reading",
+  personal: "Personal",
   other: "Other",
 };
 

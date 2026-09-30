@@ -46,7 +46,7 @@ def test_categories_and_sport():
     by_title = {e["title"]: e for e in events}
     assert by_title["Long run 20km"]["category"] == "training"
     assert by_title["Gym strength"]["sport"] == "strength"
-    assert by_title["Dentist"]["category"] == "other" and by_title["Dentist"]["sport"] is None
+    assert by_title["Dentist"]["category"] == "personal" and by_title["Dentist"]["sport"] is None
 
 
 def test_fixed_category_calendar_overrides_guess():
@@ -55,10 +55,12 @@ def test_fixed_category_calendar_overrides_guess():
 
 
 def test_classify():
-    assert classify("Knee rehab") == "training"
+    assert classify("Mobility & core") == "training"
     assert classify("Lecture: statistics") == "study"
     assert classify("Team stand-up") == "work"
     assert classify("Spin class") == "training"  # sport wins over "class"
+    assert classify("Reading — novel") == "reading"
+    assert classify("Lunch with Sam") == "personal"
     assert classify("Choir") == "other"
     assert classify("Choir", {"study": ["choir"]}) == "study"
 

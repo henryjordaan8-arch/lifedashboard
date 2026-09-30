@@ -32,10 +32,14 @@ class Settings:
     training_keywords: list[str] = field(default_factory=lambda: _list("TRAINING_KEYWORDS"))
     work_keywords: list[str] = field(default_factory=lambda: _list("WORK_KEYWORDS"))
     study_keywords: list[str] = field(default_factory=lambda: _list("STUDY_KEYWORDS"))
+    reading_keywords: list[str] = field(default_factory=lambda: _list("READING_KEYWORDS"))
+    personal_keywords: list[str] = field(default_factory=lambda: _list("PERSONAL_KEYWORDS"))
     # Calendars whose events all belong to one category (no keyword guessing needed).
     gcal_training_urls: list[str] = field(default_factory=lambda: _list("GCAL_TRAINING_ICS_URLS"))
     gcal_work_urls: list[str] = field(default_factory=lambda: _list("GCAL_WORK_ICS_URLS"))
     gcal_study_urls: list[str] = field(default_factory=lambda: _list("GCAL_STUDY_ICS_URLS"))
+    gcal_reading_urls: list[str] = field(default_factory=lambda: _list("GCAL_READING_ICS_URLS"))
+    gcal_personal_urls: list[str] = field(default_factory=lambda: _list("GCAL_PERSONAL_ICS_URLS"))
     key_session_keywords: list[str] = field(
         default_factory=lambda: _list("KEY_SESSION_KEYWORDS")
         or ["key", "race", "test", "exam", "deadline", "long run", "tempo", "interval"]
@@ -63,4 +67,6 @@ def calendar_sources(cfg: Settings) -> list[tuple[str | None, str]]:
         + [("training", u) for u in cfg.gcal_training_urls]
         + [("work", u) for u in cfg.gcal_work_urls]
         + [("study", u) for u in cfg.gcal_study_urls]
+        + [("reading", u) for u in cfg.gcal_reading_urls]
+        + [("personal", u) for u in cfg.gcal_personal_urls]
     )

@@ -13,8 +13,8 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-type Tab = "today" | "overview";
-const tabFromHash = (): Tab => (window.location.hash === "#/overview" ? "overview" : "today");
+type Tab = "dashboard" | "today";
+const tabFromHash = (): Tab => (window.location.hash === "#/today" ? "today" : "dashboard");
 
 export function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
@@ -83,8 +83,8 @@ export function App() {
           </div>
         </div>
         <nav className="tabs" aria-label="Views">
+          <a href="#/dashboard" className={tab === "dashboard" ? "on" : ""}>Dashboard</a>
           <a href="#/today" className={tab === "today" ? "on" : ""}>Today</a>
-          <a href="#/overview" className={tab === "overview" ? "on" : ""}>Training &amp; sleep</a>
         </nav>
         <div className="sync">
           <span className={pillClass} title={status?.last_error ?? undefined}>
@@ -105,7 +105,7 @@ export function App() {
       )}
 
       {tab === "today" ? (
-        <TodayView nights={nights} readiness={readiness} refreshKey={refreshKey} />
+        <TodayView refreshKey={refreshKey} />
       ) : (
         <main className="grid">
           <SleepCard nights={nights} />

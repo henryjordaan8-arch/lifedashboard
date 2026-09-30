@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import { isoDay } from "../format";
-import type { CalEvent, DayPlan, Readiness, SleepNight, Week } from "../types";
+import type { CalEvent, DayPlan, Week } from "../types";
 import { DayTimeline } from "./DayTimeline";
 import { KeySessionsCard } from "./KeySessionsCard";
-import { MorningCard } from "./MorningCard";
 import { WeeklyChecklist } from "./WeeklyChecklist";
 
-export function TodayView({
-  nights,
-  readiness,
-  refreshKey,
-}: {
-  nights: SleepNight[];
-  readiness: Readiness | null;
-  refreshKey: number;
-}) {
+export function TodayView({ refreshKey }: { refreshKey: number }) {
   const [day, setDay] = useState(() => isoDay(new Date()));
   const [plan, setPlan] = useState<DayPlan | null>(null);
   const [keys, setKeys] = useState<CalEvent[]>([]);
@@ -47,10 +38,7 @@ export function TodayView({
         <DayTimeline plan={plan} day={day} onDay={setDay} />
       </div>
       <div className="span-5 stack">
-        <MorningCard nights={nights} readiness={readiness} />
         <KeySessionsCard events={keys} />
-      </div>
-      <div className="span-12">
         <WeeklyChecklist week={week} onTick={tick} />
       </div>
     </main>

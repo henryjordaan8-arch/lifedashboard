@@ -134,7 +134,10 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
         """Calendar events with start <= day < end."""
         if cfg.demo_mode:
             return sorted(demo.calendar_events(start, end), key=lambda e: e["start"])
-        extra = {"training": cfg.training_keywords, "work": cfg.work_keywords, "study": cfg.study_keywords}
+        extra = {
+            "training": cfg.training_keywords, "work": cfg.work_keywords, "study": cfg.study_keywords,
+            "reading": cfg.reading_keywords, "personal": cfg.personal_keywords,
+        }
         return calendar_feed.events(
             calendar_sources(cfg),
             datetime.combine(start, datetime.min.time()),

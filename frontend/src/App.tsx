@@ -91,7 +91,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
       <header className="top">
         <div>
           <h1>{greeting()}</h1>
-          <div className="date">
+          <div className="date" title={status?.version ? `Version ${status.version}` : undefined}>
             {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </div>
         </div>
@@ -143,6 +143,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
           <UpcomingCard events={upcoming.highlights ?? []} configured={upcoming.configured} />
         </main>
       )}
+      <footer className="app-foot">Life Dashboard · version {status?.version ?? "—"}</footer>
     </div>
   );
 }

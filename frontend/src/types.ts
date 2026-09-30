@@ -7,6 +7,7 @@ export interface Status {
   last_sync: string | null;
   last_error: string | null;
   calendar_configured: boolean;
+  version?: string;
 }
 
 export interface HrvDay {

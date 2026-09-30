@@ -25,6 +25,13 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
+def _version() -> str:
+    try:
+        return (BACKEND_DIR.parent / "VERSION").read_text().strip()
+    except OSError:
+        return "unknown"
+
+
 class Login(BaseModel):
     password: str
 
@@ -162,6 +169,7 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
             "last_error": state.last_error,
             "last_counts": state.last_counts,
             "calendar_configured": cfg.demo_mode or bool(calendar_sources(cfg)),
+            "version": _version(),
         }
 
     @app.post("/api/sync")

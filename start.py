@@ -16,6 +16,7 @@ import hashlib
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -137,6 +138,19 @@ def print_garmin_token() -> int:
     return 0
 
 
+def port_in_use(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
+def version() -> str:
+    try:
+        return (ROOT / "VERSION").read_text().strip()
+    except OSError:
+        return "unknown"
+
+
 def main() -> int:
     # Ctrl+C, closing the terminal window, or a plain `kill` all shut both servers down cleanly.
     for sig in ("SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"):
@@ -173,6 +187,15 @@ def main() -> int:
         say("No Google Calendar link in backend/.env yet: the Today view and Upcoming will be empty.")
 
     backend_env = dict(os.environ, **({"DEMO_MODE": "true"} if args.demo else {}))
+    # An old copy still running would silently answer instead of this one.
+    busy = [p for p in (BACKEND_PORT, FRONTEND_PORT) if port_in_use(p)]
+    if busy:
+        fail(
+            "Life Dashboard (or something else) is already running on port "
+            + " and ".join(map(str, busy))
+            + ".\n  Close the other dashboard window first (or restart your computer), then start this one again."
+        )
+    say(f"Life Dashboard version {version()} · {ROOT}")
     say(f"Starting backend{' (demo data)' if demo else ''}…")
     backend = subprocess.Popen(
         [str(PY), "-m", "uvicorn", "app.main:app", "--port", str(BACKEND_PORT), "--log-level", "warning"],

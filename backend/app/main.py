@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import auth, calendar_feed, demo, garmin, normalize, planner, readiness, sport
+from . import auth, calendar_feed, demo, garmin, normalize, planner, readiness, scoring, sport
 from .config import BACKEND_DIR, Settings, calendar_sources, settings as default_settings
 from .store import Store
 
@@ -297,7 +297,8 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
     @app.get("/api/readiness")
     def readiness_inputs() -> dict[str, Any]:
         today = date.today()
-        start, end = _range(readiness.BASELINE_DAYS + 1, today)
+        # 60-day HRV baseline + alert baselines need ~2 months of nights.
+        start, end = _range(91, today)
         raw_sleep = store.get_daily("sleep", start, end)
         raw_hrv = store.get_daily("hrv", start, end)
         raw_stats = store.get_daily("stats", start, end)
@@ -310,12 +311,42 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
                 normalize.stats(d, raw_stats.get(d)),
             )
 
-        # Recent-session stats look back 5 weeks; VO2 max trend ~2 months.
-        acts = activities_between((today - timedelta(days=36)).isoformat(), end)
+        # EWMA load needs ~4 months of activities; VO2 max trend ~2 months.
+        acts = activities_between((today - timedelta(days=120)).isoformat(), end)
+        for a in acts:
+            a["key"] = calendar_feed.key_reason(a["name"], "training", a["sport"], cfg.key_session_keywords)
+            if a["sport"] in ("run", "ride"):
+                a["decoupling"] = normalize.decoupling(store.get_one("splits", str(a["id"])), a["sport"])
         garmin_today = normalize.readiness(end, store.get_daily("readiness", end, end).get(end))
         vo2_start = (today - timedelta(days=60)).isoformat()
         vo2 = {d: normalize.vo2max(d, r) for d, r in store.get_daily("maxmetrics", vo2_start, end).items()}
-        return readiness.build(today, get_day, acts, garmin_today, {d: v for d, v in vo2.items() if v})
+        vo2 = {d: v for d, v in vo2.items() if v}
+        result = readiness.build(today, get_day, acts, garmin_today, vo2)
+
+        # Per-day metrics for the v2 score and the alerts.
+        days: dict[str, dict[str, Any]] = {}
+        for d in {*raw_sleep, *raw_hrv, *raw_stats}:
+            n = normalize.sleep(d, raw_sleep.get(d)) or {}
+            h = normalize.hrv(d, raw_hrv.get(d)) or {}
+            s = normalize.stats(d, raw_stats.get(d)) or {}
+            days[d] = {
+                "hrv": h.get("last_night") or n.get("avg_hrv"),
+                "rhr": s.get("resting_hr") or n.get("resting_hr"),
+                "sleep_score": n.get("score"),
+                "respiration": n.get("respiration"),
+                "respiration_low": n.get("respiration_low"),
+                "respiration_high": n.get("respiration_high"),
+                "skin_temp_dev": n.get("skin_temp_dev"),
+                "steps": s.get("steps"),
+                "stress": s.get("avg_stress"),
+            }
+        vo2_run = {d: v["run"] for d, v in vo2.items() if v.get("run")}
+        v2 = scoring.compute(today, days, acts, vo2_run, (garmin_today or {}).get("recovery_time_h"))
+        result["score"] = v2["score"]
+        result["components"] = v2["components"]
+        result["alerts"] = scoring.alerts(today, days, acts, vo2_run, v2["acwr_series"])
+        result["acwr_ewma"] = v2["acwr_series"][-1][1] if v2["acwr_series"] else None
+        return result
 
     # ---- the dashboard itself (production build) ----------------------------------
     dist = cfg.frontend_dist

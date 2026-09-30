@@ -114,6 +114,18 @@ def _detail(type_key: str, name: str, minutes: float, fit: float, rng: random.Ra
     return {"averageHR": 105 + int(rng.gauss(0, 4)), "maxHR": 140}
 
 
+def _splits(detail: dict[str, Any], minutes: float, drift_pct: float) -> dict[str, Any]:
+    """Equal-length laps; heart rate creeps up in the second half by ~drift_pct."""
+    n = max(4, int(minutes // 10))
+    hr, speed, power = detail["averageHR"], detail.get("averageSpeed"), detail.get("avgPower")
+    laps = []
+    for k in range(n):
+        f = 1 + drift_pct / 100 * (k / (n - 1)) * 2 - drift_pct / 100 / 2  # centred on the average
+        laps.append({"duration": minutes * 60 / n, "averageHR": round(hr * f, 1),
+                     "averageSpeed": speed, **({"averagePower": power} if power else {})})
+    return {"lapDTOs": laps}
+
+
 def seed(
     store: Store, days: int, today: date | None = None, rng_seed: int = 7, activity_days: int = 365
 ) -> None:
@@ -152,7 +164,10 @@ def seed(
                 "sleepStartTimestampLocal": _local_ms(bed),
                 "sleepEndTimestampLocal": _local_ms(wake),
                 "averageSpO2Value": round(rng.uniform(94, 98), 1),
-                "averageRespirationValue": round(rng.uniform(12.5, 15.0), 1),
+                "averageRespirationValue": (resp := round(rng.uniform(12.8, 14.2), 1)),
+                "lowestRespirationValue": round(resp - rng.uniform(1.8, 2.6), 1),
+                "highestRespirationValue": round(resp + rng.uniform(2.0, 3.0), 1),
+                "avgSkinTempDeviationC": round(rng.gauss(0, 0.2), 2),
                 "avgSleepStress": round(max(5, 14 + fatigue * 6 + rng.gauss(0, 3)), 1),
                 "sleepScores": {"overall": {"value": score, "qualifierKey": "GOOD" if score >= 80 else "FAIR"}},
             },
@@ -186,6 +201,7 @@ def seed(
             "score": ready,
             "level": "HIGH" if ready >= 75 else "MODERATE" if ready >= 50 else "LOW",
             "feedbackShort": "WELL_RECOVERED" if ready >= 60 else "RECOVERING",
+            "recoveryTime": int(max(0.0, fatigue * 14 + rng.gauss(3, 3)) * 60),  # minutes
         }])
 
         # Activities: follow the plan, skip the odd session, nothing yet for today.
@@ -199,6 +215,12 @@ def seed(
             load *= rng.uniform(0.85, 1.15)
             load_today += load
             quality = any(w in name.lower() for w in ("vo2", "tempo", "sweet spot"))
+            detail = _detail(type_key, name, minutes, fit, rng)
+            if type_key in ("running", "road_biking", "virtual_ride") and i <= 90:
+                # Lap splits for aerobic decoupling. The last few long runs drift more
+                # and more, so the demo shows the "overreaching" alert.
+                drift = 7 - i * 0.2 if name.startswith("Long run") and i <= 21 else rng.uniform(1.0, 4.0)
+                store.put_daily("splits", str(act_id), _splits(detail, minutes, drift))
             store.put_activities([(act_id, day, {
                 "activityId": act_id,
                 "activityName": name,
@@ -209,7 +231,7 @@ def seed(
                 "activityTrainingLoad": round(load, 1),
                 "aerobicTrainingEffect": round(rng.uniform(3.2, 4.2) if quality else rng.uniform(1.8, 3.2), 1),
                 "anaerobicTrainingEffect": round(rng.uniform(1.8, 3.2) if quality else rng.uniform(0.0, 1.0), 1),
-                **_detail(type_key, name, minutes, fit, rng),
+                **detail,
             })])
         fatigue = max(0.0, fatigue * 0.6 + load_today / 200)
 

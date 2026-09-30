@@ -94,6 +94,14 @@ def sleep(day: str, raw: dict[str, Any] | None) -> dict[str, Any] | None:
         "resting_hr": _int(raw.get("restingHeartRate")),
         "spo2": _num(dto.get("averageSpO2Value")),
         "respiration": _num(dto.get("averageRespirationValue")),
+        "respiration_low": _num(dto.get("lowestRespirationValue")),
+        "respiration_high": _num(dto.get("highestRespirationValue")),
+        # Newer watches: overnight skin temperature vs your own baseline (°C).
+        "skin_temp_dev": _num(
+            dto.get("avgSkinTempDeviationC")
+            if dto.get("avgSkinTempDeviationC") is not None
+            else raw.get("avgSkinTempDeviationC")
+        ),
         "stress": _num(dto.get("avgSleepStress")),
         "body_battery_change": _int(raw.get("bodyBatteryChange")),
     }
@@ -141,11 +149,13 @@ def readiness(day: str, raw: Any) -> dict[str, Any] | None:
     # Several entries per day are possible (after sleep, after activities); the
     # morning one reflects recovery best, so take the earliest.
     first = min(entries, key=lambda e: str(e.get("timestamp") or e.get("timestampLocal") or ""))
+    recovery_min = _num(first.get("recoveryTime"))  # Garmin reports minutes
     return {
         "date": day,
         "score": _int(first.get("score")),
         "level": first.get("level"),
         "feedback": first.get("feedbackShort"),
+        "recovery_time_h": None if recovery_min is None else round(recovery_min / 60, 1),
     }
 
 
@@ -219,3 +229,38 @@ def vo2max(day: str, raw: Any) -> dict[str, Any] | None:
     if run is None and ride is None:
         return None
     return {"date": day, "run": run, "ride": ride}
+
+
+def decoupling(raw: Any, sport: str) -> float | None:
+    """Aerobic decoupling (%) from an activity's lap splits.
+
+    Efficiency = output per heartbeat (speed, or power for rides with a power meter),
+    compared between the first and second half of the session by time. Positive means
+    the heart rate drifted up relative to output (Pa:HR / Pw:HR decoupling).
+    """
+    laps = (raw or {}).get("lapDTOs") if isinstance(raw, dict) else None
+    laps = [l for l in laps or [] if _num(l.get("duration")) and _num(l.get("averageHR"))]
+    if len(laps) < 2:
+        return None
+    use_power = sport == "ride" and all(_num(l.get("averagePower")) for l in laps)
+    out_key = "averagePower" if use_power else "averageSpeed"
+    if not all(_num(l.get(out_key)) for l in laps):
+        return None
+    total = sum(_num(l["duration"]) for l in laps)
+    halves: list[list[dict]] = [[], []]
+    t = 0.0
+    for lap in laps:
+        d = _num(lap["duration"])
+        halves[0 if t + d / 2 < total / 2 else 1].append(lap)
+        t += d
+    if not halves[0] or not halves[1]:
+        return None
+
+    def efficiency(group: list[dict]) -> float:
+        w = sum(_num(l["duration"]) for l in group)
+        out = sum(_num(l[out_key]) * _num(l["duration"]) for l in group) / w
+        hr = sum(_num(l["averageHR"]) * _num(l["duration"]) for l in group) / w
+        return out / hr
+
+    first, second = efficiency(halves[0]), efficiency(halves[1])
+    return round((first - second) / first * 100, 1)

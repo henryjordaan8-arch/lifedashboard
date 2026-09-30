@@ -68,6 +68,12 @@ class Store:
         )
         return {day: json.loads(payload) for day, payload in rows}
 
+    def get_one(self, kind: str, key: str) -> Any | None:
+        row = self.conn.execute(
+            "SELECT payload FROM daily WHERE kind = ? AND day = ?", (kind, key)
+        ).fetchone()
+        return json.loads(row[0]) if row else None
+
     # --- activities -----------------------------------------------------
     def put_activities(self, items: Iterable[tuple[int, str, Any]]) -> None:
         now = _now()

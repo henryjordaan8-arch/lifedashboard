@@ -11,10 +11,10 @@ A personal desktop dashboard for Garmin data, training, work and study.
 
 **Dashboard** tab:
 
-- **Sleep at a glance**: last night's duration, score and stages; HRV, resting HR, Body Battery, SpO₂ and respiration; a 14-night stage chart and an HRV trend against your balanced range.
+- **Sleep at a glance**: last night's duration, score and stages; HRV, resting HR, Body Battery, SpO₂ and respiration; a 14-night stage chart, and a 14-night trend for any sleep metric (HRV, resting HR, score, stages, SpO₂, respiration, Body Battery, stress) against your normal range.
 - **Training calendar**: a month view of completed Garmin activities, colour-coded by sport, with monthly totals. Click a session for pace, heart rate, load and training effect. Planned sessions show as dashed chips on future days.
 - **Upcoming sessions**: the next 14 days from Google Calendar, grouped by day.
-- **Training readiness**: a 0–100 score with a breakdown of what's driving it; see below.
+- **Training readiness**: a 100-point score with a bar per component, plus alerts for illness, overreaching and sleep debt; see below.
 
 **Today** tab:
 
@@ -38,28 +38,41 @@ A personal desktop dashboard for Garmin data, training, work and study.
 
 Activity history is synced for `ACTIVITY_BACKFILL_DAYS`, 2 years by default. It's a single request, so it's cheap. Metrics that need a particular sensor (power meter, running dynamics, pool swim) only appear when Garmin has them.
 
-## Readiness score (v1)
+## Readiness score (v2)
 
-Each recovery input is compared with your own previous 28 days. An input at your normal scores 50; 2.5 standard deviations better scores 100, and 2.5 worse scores 0. The inputs are then weighted:
+The score is out of 100 points. Within each band, points scale with how far into the band you are.
 
-| Input | Weight |
-|---|---|
-| Overnight HRV | 25 |
-| Resting heart rate (lower is better) | 15 |
-| Sleep score | 15 |
-| Sleep duration | 10 |
-| Body Battery at wake | 10 |
-| Overnight stress (lower is better) | 5 |
-| Training load: 7-day vs 28-day ratio (sweet spot 0.8–1.3) | 10 |
-| Days since the last hard session | 5 |
-| VO₂ max trend over 4 weeks | 5 |
+| Component | Points | Measured as | Full marks … zero |
+|---|---|---|---|
+| HRV | 28 | last night vs your 60-day average | ≥ +10% … below −15% |
+| Sleep last night | 18 | Garmin sleep score | 90–100 … below 45 |
+| Load ratio (ACWR) | 15 | EWMA 7-day ÷ 28-day training load | 0.8–1.0 … above 1.5 or below 0.5 |
+| Recovery time | 12 | Garmin recovery time | 0 h … over 48 h |
+| Sleep, last 3 nights | 7 | average sleep score | ≥ 80 … below 50 |
+| Resting HR | 5 | vs 7-day average | at or below … more than 6 bpm above |
+| Respiration | 5 | vs 30-day average | at or below … more than 2 breaths/min above |
+| Aerobic decoupling | 4 | 7-day average over steady runs and rides | under 3% … over 12% |
+| VO₂ max | 3 | 14-day trend | stable or rising … down more than 5% |
+| Stress | 3 | Garmin average, last 3 days | 0–25 … over 75 |
 
-Some caps override the average: HRV well below normal caps the score at 50, and under 5 h of sleep caps it at 55. Bands: 75+ ready for hard, 55+ train as planned, 35+ take it easier, below 35 recover. If an input is missing, the weights are rebalanced across the rest. Weights and thresholds live at the top of `backend/app/readiness.py`.
+- **Missing data:** components with no data (e.g. no respiration from your watch) are left out, and the total is rescaled to 100.
+- **Colours:** each component shows a bar of points earned. Amber and red mark the ones holding the score back.
+- **Aerobic decoupling:** compares output per heartbeat in the first and second half of a run or ride, using lap splits. Key sessions are left out because intervals aren't steady efforts.
+- **Where to change it:** the points tables live at the top of `backend/app/scoring.py`.
 
-```
-backend/   FastAPI + SQLite. Syncs Garmin (python-garminconnect) and reads Google Calendar (iCal)
-frontend/  React + Vite + TypeScript. Dashboard UI; hand-drawn SVG charts, no chart library
-```
+**Alerts** show above the dashboard. They're not part of the score:
+
+- **Possible illness:** 3 or more of these signals on each of the last 2 nights:
+  - skin temperature up (watches that measure it)
+  - resting HR up
+  - fewer steps than usual
+  - HRV down
+  - breathing faster or more variable
+- **Overreaching:** any of these:
+  - load ratio above 1.5 for 3 days running
+  - aerobic decoupling rising across your last 3 steady runs
+  - VO₂ max falling for 14+ days while training load held up
+- **Sleep debt:** the 3-night average sleep score is below 60, even if last night looked better.
 
 ## Getting started
 

@@ -1,11 +1,20 @@
 import { duration, km, parseDay, SPORT_LABEL, titleCase } from "../format";
-import type { Readiness, ReadinessScore, ScoreComponent } from "../types";
+import type { ComponentStatus, Readiness, ReadinessScore, ScoreComponent } from "../types";
 
 const BAND: Record<ReadinessScore["band"], { color: string; icon: string }> = {
   high: { color: "var(--good)", icon: "▲" },
   good: { color: "var(--good)", icon: "●" },
   low: { color: "var(--warn)", icon: "▼" },
   rest: { color: "var(--bad)", icon: "■" },
+};
+
+/** On-track components stay in the neutral accent; only the ones that are off get colour. */
+const STATUS: Record<ComponentStatus, { color: string; icon: string; label: string }> = {
+  good: { color: "var(--accent)", icon: "", label: "" },
+  ok: { color: "var(--accent)", icon: "", label: "" },
+  warn: { color: "var(--warn)", icon: "▼", label: "low" },
+  bad: { color: "var(--bad)", icon: "■", label: "very low" },
+  none: { color: "var(--neutral)", icon: "", label: "" },
 };
 
 function Ring({ score }: { score: ReadinessScore | null }) {
@@ -28,55 +37,43 @@ function Ring({ score }: { score: ReadinessScore | null }) {
   );
 }
 
-/** Diverging bar: points above 50 push right (helping), below 50 push left (hurting). */
-function ImpactBar({ points }: { points: number }) {
-  const W = 84;
-  const H = 8;
-  const mid = W / 2;
-  const d = points - 50;
-  const len = (Math.min(Math.abs(d), 50) / 50) * mid;
+function ComponentRow({ c }: { c: ScoreComponent }) {
+  const st = STATUS[c.status];
+  const pct = c.points == null ? 0 : (c.points / c.max) * 100;
+  const pts = c.points == null ? "—" : Number.isInteger(c.points) ? c.points : c.points.toFixed(1);
   return (
-    <svg width={W} height={H} aria-hidden>
-      <rect x={0} y={3} width={W} height={2} rx={1} fill="var(--neutral)" />
-      {Math.abs(d) >= 2 && (
-        <rect x={d >= 0 ? mid : mid - len} y={0} width={Math.max(len, 2)} height={H} rx={3} fill={d >= 0 ? "var(--better)" : "var(--worse)"} />
-      )}
-      <line x1={mid} x2={mid} y1={-2} y2={H + 2} stroke="var(--baseline)" />
-    </svg>
+    <div className={`comp ${c.available ? "" : "na"}`} title={`${c.label}: ${c.detail}`}>
+      <div className="comp-top">
+        <span className="comp-name">
+          {c.label}
+          {st.icon && (
+            <span className="comp-flag" style={{ color: st.color }}>
+              {st.icon} {st.label}
+            </span>
+          )}
+        </span>
+        <span className="comp-pts tnum">
+          <b>{pts}</b>/{c.max}
+        </span>
+      </div>
+      <div className="comp-bar" role="img" aria-label={`${pts} of ${c.max} points`}>
+        <div style={{ width: `${pct}%`, background: st.color }} />
+      </div>
+      <div className="comp-detail">
+        <b className="tnum">{c.value_text}</b> {c.detail}
+      </div>
+    </div>
   );
-}
-
-function detail(c: ScoreComponent, data: Readiness): string {
-  const input = data.inputs.find((i) => i.key === c.key);
-  if (input) {
-    const fmt = (v: number | null) => (v == null ? "—" : c.key === "sleep_hours" ? v.toFixed(1) : String(Math.round(v)));
-    return `${fmt(input.today)}${input.unit ? ` ${input.unit}` : ""} · avg ${fmt(input.baseline_mean)}`;
-  }
-  if (c.key === "load") return `ratio ${data.load.ratio?.toFixed(2) ?? "—"} · ${Math.round(data.load.acute)} vs ${Math.round(data.load.chronic)}`;
-  if (c.key === "recent") {
-    const d = data.recent.days_since_hard;
-    return d == null ? "none in 5 weeks" : d === 1 ? "yesterday" : `${d} days ago`;
-  }
-  if (c.key === "fitness" && data.fitness) {
-    const ch = data.fitness.change_28d;
-    return `${data.fitness.vo2max_run.toFixed(1)} · ${ch > 0 ? "+" : ""}${ch.toFixed(1)} in 4 wk`;
-  }
-  return "";
-}
-
-function verdict(points: number) {
-  if (points >= 65) return "helping";
-  if (points <= 35) return "hurting";
-  return "neutral";
 }
 
 export function ReadinessCard({ data }: { data: Readiness | null }) {
   const score = data?.score ?? null;
+  const components = data?.components ?? [];
   return (
     <section className="card span-4">
       <div className="card-head">
         <h2>Training readiness</h2>
-        <span className="sub">vs your {data?.baseline_days ?? 28}-day normal</span>
+        <span className="sub">{score ? `${score.earned} of ${score.available} points` : "out of 100"}</span>
       </div>
 
       <div className="score-hero">
@@ -88,12 +85,14 @@ export function ReadinessCard({ data }: { data: Readiness | null }) {
                 <span aria-hidden>{BAND[score.band].icon}</span> {titleCase(score.band === "rest" ? "recover" : score.band)}
               </div>
               <div className="band-label">{score.label}</div>
-              {score.caps.map((cap) => (
-                <div key={cap.reason} className="cap">Capped at {cap.max}: {cap.reason}</div>
-              ))}
+              {score.available < 100 && (
+                <div className="garmin-ref">
+                  Rescaled to 100: {100 - score.available} points' worth of inputs have no data yet.
+                </div>
+              )}
             </>
           ) : (
-            <div className="band-label">Not enough history yet — a score appears after about a week of data.</div>
+            <div className="band-label">Not enough history yet: a score appears after about a week of data.</div>
           )}
           {data?.garmin?.score != null && (
             <div className="garmin-ref">Garmin's own estimate: {data.garmin.score} · {titleCase(data.garmin.level)}</div>
@@ -101,27 +100,11 @@ export function ReadinessCard({ data }: { data: Readiness | null }) {
         </div>
       </div>
 
-      {score && data && (
-        <div className="drivers">
-          <div className="drivers-head">
-            <span>What's driving it</span>
-            <span>weight</span>
-          </div>
-          {score.components.map((c) => (
-            <div className="driver" key={c.key} title={`${c.points}/100 → ${c.contribution} points of the score`}>
-              <div style={{ minWidth: 0 }}>
-                <div className="name">{c.label}</div>
-                <div className="vals tnum">{detail(c, data)}</div>
-              </div>
-              <div className="impact">
-                <ImpactBar points={c.points} />
-                <div className="dev">{verdict(c.points)}</div>
-              </div>
-              <div className="w tnum">{Math.round(c.weight)}%</div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="comps">
+        {components.map((c) => (
+          <ComponentRow key={c.key} c={c} />
+        ))}
+      </div>
 
       {data && data.recent.last.length > 0 && (
         <div className="recent">
@@ -140,7 +123,7 @@ export function ReadinessCard({ data }: { data: Readiness | null }) {
           ))}
         </div>
       )}
-      <p className="note">Bars point right when a factor is better than your normal and lifts the score.</p>
+      <p className="note">Bars show points earned out of each component's maximum. Amber and red mark the ones holding the score back.</p>
     </section>
   );
 }

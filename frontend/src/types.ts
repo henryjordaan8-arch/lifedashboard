@@ -32,6 +32,9 @@ export interface SleepNight {
   resting_hr: number | null;
   spo2: number | null;
   respiration: number | null;
+  respiration_low: number | null;
+  respiration_high: number | null;
+  skin_temp_dev: number | null;
   stress: number | null;
   body_battery_change: number | null;
   body_battery_wake: number | null;
@@ -125,12 +128,18 @@ export interface ReadinessInput {
   history: { date: string; value: number | null }[];
 }
 
+export type ComponentStatus = "good" | "ok" | "warn" | "bad" | "none";
+
 export interface ScoreComponent {
   key: string;
   label: string;
-  points: number; // 0-100, 50 = neutral
-  weight: number; // % of the score
-  contribution: number;
+  max: number;
+  points: number | null;
+  available: boolean;
+  value: number | null;
+  value_text: string;
+  detail: string;
+  status: ComponentStatus;
 }
 
 export interface ReadinessScore {
@@ -138,16 +147,28 @@ export interface ReadinessScore {
   band: "high" | "good" | "low" | "rest";
   label: string;
   components: ScoreComponent[];
-  caps: { reason: string; max: number }[];
+  earned: number;
+  available: number;
   version: number;
+}
+
+export interface Alert {
+  id: "illness" | "overreaching" | "sleep_debt" | string;
+  severity: "critical" | "warning";
+  title: string;
+  detail: string;
+  signals: string[];
 }
 
 export interface Readiness {
   date: string;
   score: ReadinessScore | null;
+  components: ScoreComponent[];
+  alerts: Alert[];
+  acwr_ewma: number | null;
   inputs: ReadinessInput[];
   load: { acute: number; chronic: number; ratio: number | null; yesterday: number };
-  garmin: { score: number | null; level: string | null; feedback: string | null } | null;
+  garmin: { score: number | null; level: string | null; feedback: string | null; recovery_time_h: number | null } | null;
   recent: {
     sessions_7d: number;
     hard_7d: number;

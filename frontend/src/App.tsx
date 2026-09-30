@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import { STATIC } from "./static";
+import { AlertsBar } from "./components/AlertsBar";
 import { ReadinessCard } from "./components/ReadinessCard";
 import { SportView } from "./components/SportView";
 import { TodayView } from "./components/TodayView";
@@ -132,6 +133,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
         <SportView sport={tab} refreshKey={refreshKey} />
       ) : (
         <main className="grid">
+          <AlertsBar alerts={readiness?.alerts ?? []} />
           <SleepCard nights={nights} />
           <ReadinessCard data={readiness} />
           <TrainingCalendar planned={upcoming.events} refreshKey={refreshKey} />

@@ -1,6 +1,6 @@
 import { clock, duration, parseDay, titleCase } from "../format";
 import type { SleepNight } from "../types";
-import { HrvTrend } from "./HrvTrend";
+import { NightTrend } from "./NightTrend";
 import { SleepStagesChart, STAGES } from "./SleepStagesChart";
 
 function avg(xs: (number | null | undefined)[]): number | null {
@@ -119,11 +119,7 @@ export function SleepCard({ nights }: { nights: SleepNight[] }) {
           <SleepStagesChart nights={recent} />
         </div>
         <div>
-          <div className="chart-title">
-            <span>Overnight HRV (ms)</span>
-            <span className="muted">Band = your balanced range</span>
-          </div>
-          <HrvTrend nights={recent} />
+          <NightTrend nights={recent} all={nights} />
         </div>
       </div>
     </section>

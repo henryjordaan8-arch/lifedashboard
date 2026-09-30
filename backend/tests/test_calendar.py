@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.calendar_feed import parse_events
+from app.calendar_feed import classify, key_reason, parse_events
 
 ICS = """BEGIN:VCALENDAR
 VERSION:2.0
@@ -41,6 +41,31 @@ def test_parses_recurring_and_all_day():
     assert len({e["id"] for e in events}) == len(events)
 
 
-def test_keyword_filter():
-    events = parse_events(ICS, datetime(2026, 7, 1), datetime(2026, 7, 20), ["run", "gym"])
-    assert {e["title"] for e in events} == {"Long run 20km", "Gym strength"}
+def test_categories_and_sport():
+    events = parse_events(ICS, datetime(2026, 7, 1), datetime(2026, 7, 20))
+    by_title = {e["title"]: e for e in events}
+    assert by_title["Long run 20km"]["category"] == "training"
+    assert by_title["Gym strength"]["sport"] == "strength"
+    assert by_title["Dentist"]["category"] == "other" and by_title["Dentist"]["sport"] is None
+
+
+def test_fixed_category_calendar_overrides_guess():
+    events = parse_events(ICS, datetime(2026, 7, 1), datetime(2026, 7, 20), category="work")
+    assert {e["category"] for e in events} == {"work"}
+
+
+def test_classify():
+    assert classify("Knee rehab") == "training"
+    assert classify("Lecture: statistics") == "study"
+    assert classify("Team stand-up") == "work"
+    assert classify("Spin class") == "training"  # sport wins over "class"
+    assert classify("Choir") == "other"
+    assert classify("Choir", {"study": ["choir"]}) == "study"
+
+
+def test_key_reason():
+    kws = ["key", "race", "long run"]
+    assert key_reason("Long run 20km", kws) == "“long run” in title"
+    assert key_reason("★ Threshold", kws) == "starred"
+    assert key_reason("Keyboard practice", kws) is None  # whole words only
+    assert key_reason("Easy run", kws) is None

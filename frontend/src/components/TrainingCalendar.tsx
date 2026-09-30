@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { addDays, clock, duration, isoDay, km, pace, parseDay, SPORT_LABEL } from "../format";
-import type { Activity, PlannedSession, Sport } from "../types";
+import type { Activity, CalEvent, Sport } from "../types";
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const SPORT_ORDER: Sport[] = ["run", "ride", "swim", "strength", "other"];
+const SPORT_ORDER: Sport[] = ["run", "ride", "swim", "strength", "rehab", "other"];
 
 function monthGrid(month: Date): Date[] {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -21,7 +21,7 @@ function shortMeta(a: Activity) {
   return duration(a.duration_s);
 }
 
-export function TrainingCalendar({ planned, refreshKey }: { planned: PlannedSession[]; refreshKey: number }) {
+export function TrainingCalendar({ planned, refreshKey }: { planned: CalEvent[]; refreshKey: number }) {
   const [month, setMonth] = useState(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
@@ -49,7 +49,7 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: PlannedSess
   }, [activities]);
 
   const plannedByDay = useMemo(() => {
-    const m = new Map<string, PlannedSession[]>();
+    const m = new Map<string, CalEvent[]>();
     for (const p of planned) {
       const d = p.start.slice(0, 10);
       m.set(d, [...(m.get(d) ?? []), p]);
@@ -120,7 +120,7 @@ export function TrainingCalendar({ planned, refreshKey }: { planned: PlannedSess
               ))}
               {plans.map((p) => (
                 <div key={p.id} className="chip planned" title={`Planned: ${p.title}`}>
-                  <span className="bar" style={{ background: `var(--sport-${p.sport})` }} />
+                  <span className="bar" style={{ background: `var(--sport-${p.sport ?? "other"})` }} />
                   <span className="lbl">{p.title}</span>
                   {!p.all_day && <span className="meta tnum">{clock(p.start)}</span>}
                 </div>

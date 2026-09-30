@@ -10,7 +10,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-SPORTS = ("run", "ride", "swim", "strength", "other")
+SPORTS = ("run", "ride", "swim", "strength", "rehab", "other")
 
 _SPORT_BY_TYPE_KEY = [
     ("run", ("running", "track_", "treadmill", "trail_run", "ultra_run")),
@@ -19,7 +19,10 @@ _SPORT_BY_TYPE_KEY = [
     ("strength", ("strength", "hiit", "weight", "crossfit")),
 ]
 
+_REHAB = r"\b(rehab\w*|prehab|physio\w*|knee)\b"
+
 _SPORT_BY_TITLE = [
+    ("rehab", _REHAB),
     ("run", r"\b(run|runs|running|jog|tempo|intervals?|parkrun|fartlek|strides|long run|easy run)\b"),
     ("ride", r"\b(ride|bike|cycl\w*|zwift|spin|trainer|turbo)\b"),
     ("swim", r"\b(swim\w*|pool|open water)\b"),
@@ -27,7 +30,10 @@ _SPORT_BY_TITLE = [
 ]
 
 
-def sport_from_type_key(type_key: str | None) -> str:
+def sport_from_type_key(type_key: str | None, name: str | None = None) -> str:
+    # Rehab work is logged as strength/other in Garmin; the activity name tells it apart.
+    if name and re.search(_REHAB, name.lower()):
+        return "rehab"
     key = (type_key or "").lower()
     for sport, needles in _SPORT_BY_TYPE_KEY:
         if any(n in key for n in needles):
@@ -159,7 +165,7 @@ def activity(raw: dict[str, Any]) -> dict[str, Any] | None:
     return {
         "id": int(aid),
         "name": raw.get("activityName") or "Activity",
-        "sport": sport_from_type_key(type_key),
+        "sport": sport_from_type_key(type_key, raw.get("activityName")),
         "type_key": type_key,
         "date": str(start)[:10],
         "start": str(start).replace(" ", "T")[:16],
@@ -173,3 +179,20 @@ def activity(raw: dict[str, Any]) -> dict[str, Any] | None:
         "aerobic_te": _num(raw.get("aerobicTrainingEffect")),
         "anaerobic_te": _num(raw.get("anaerobicTrainingEffect")),
     }
+
+
+def vo2max(day: str, raw: Any) -> dict[str, Any] | None:
+    """Normalize get_max_metrics(): running ("generic") and cycling VO2 max."""
+    entry = raw[0] if isinstance(raw, list) and raw else raw if isinstance(raw, dict) else None
+    if not entry:
+        return None
+
+    def value(block: Any) -> float | None:
+        if not isinstance(block, dict):
+            return None
+        return _num(block.get("vo2MaxPreciseValue")) or _num(block.get("vo2MaxValue"))
+
+    run, ride = value(entry.get("generic")), value(entry.get("cycling"))
+    if run is None and ride is None:
+        return None
+    return {"date": day, "run": run, "ride": ride}

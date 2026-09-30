@@ -13,16 +13,34 @@ from typing import Any
 
 from .store import Store
 
-_WEEK_PLAN = [  # weekday -> (typeKey, name, minutes, km or None, load)
-    ("running", "Easy Run", 45, 8.5, 70),
-    ("strength_training", "Strength", 40, None, 35),
-    ("running", "Tempo Run", 55, 11.0, 140),
-    ("road_biking", "Endurance Ride", 75, 32.0, 90),
-    None,  # rest day
-    ("running", "Long Run", 100, 19.0, 190),
-    ("lap_swimming", "Pool Swim", 40, 2.2, 45),
+# A return-from-knee-rehab week: rehab most days, short easy runs building back
+# up, low-impact cardio. weekday -> [(typeKey, title, (h, m), minutes, km, load)]
+_WEEK_PLAN: list[list[tuple]] = [
+    [("strength_training", "Knee rehab — physio exercises", (7, 0), 35, None, 25)],
+    [("running", "Easy run 5 km", (6, 30), 32, 5.0, 50)],
+    [("road_biking", "Zwift endurance ride", (18, 0), 60, 26.0, 70),
+     ("strength_training", "Knee rehab — physio exercises", (7, 0), 30, None, 20)],
+    [("strength_training", "Gym: strength & core", (18, 0), 45, None, 40)],
+    [],
+    [("running", "Long run 8 km (key)", (8, 0), 50, 8.0, 85)],
+    [("lap_swimming", "Swim — technique", (8, 30), 40, 2.0, 45),
+     ("strength_training", "Knee rehab — physio exercises", (17, 0), 30, None, 20)],
 ]
 
+_WORK = [  # weekday (Mon-Fri) -> [(title, (h, m), minutes)]
+    [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 150), ("Work — client meeting", (14, 0), 60), ("Deep work: reporting", (15, 0), 120)],
+    [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 180), ("Work — admin", (14, 0), 180)],
+    [("Team stand-up", (9, 0), 30), ("Deep work: analysis", (9, 30), 150), ("1:1 with manager", (13, 30), 30), ("Deep work: project", (14, 0), 180)],
+    [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 180), ("Work — planning meeting", (14, 0), 90)],
+    [("Team stand-up", (9, 0), 30), ("Deep work: project", (9, 30), 150), ("Work — weekly review", (13, 30), 60)],
+]
+_STUDY = {  # weekday -> [(title, (h, m), minutes)]
+    0: [("Study — statistics module", (19, 30), 90)],
+    1: [("Lecture: research methods", (18, 0), 90)],
+    3: [("Study — statistics module", (19, 30), 120)],
+    5: [("Study — assignment 2", (10, 30), 120)],
+    6: [("Revision — weekly notes", (15, 0), 60)],
+}
 
 def _local_ms(dt: datetime) -> int:
     return int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
@@ -38,7 +56,6 @@ def seed(store: Store, days: int, today: date | None = None, rng_seed: int = 7) 
     for i in range(days, -1, -1):
         d = today - timedelta(days=i)
         day = d.isoformat()
-        plan = _WEEK_PLAN[d.weekday()]
 
         # Recovery responds to the previous days' load.
         hrv = hrv_base - fatigue * 6 + rng.gauss(0, 4)
@@ -99,63 +116,83 @@ def seed(store: Store, days: int, today: date | None = None, rng_seed: int = 7) 
             "feedbackShort": "WELL_RECOVERED" if ready >= 60 else "RECOVERING",
         }])
 
-        # Activities (skip some sessions at random, and today's before it's "done").
+        # Activities: follow the plan, skip the odd session, nothing yet for today.
         load_today = 0.0
-        if plan and i > 0 and rng.random() > 0.12:
-            type_key, name, minutes, km, load = plan
+        for type_key, name, (hh, mm), minutes, km, load in (_WEEK_PLAN[d.weekday()] if i > 0 else []):
+            if rng.random() < 0.1:
+                continue
             minutes = minutes * rng.uniform(0.9, 1.1)
             act_id += 1
-            start = datetime(d.year, d.month, d.day, rng.choice([6, 7, 17, 18]), rng.choice([0, 15, 30]))
-            load_today = load * rng.uniform(0.85, 1.15)
+            start = datetime(d.year, d.month, d.day, hh, mm) + timedelta(minutes=rng.randint(-10, 20))
+            load *= rng.uniform(0.85, 1.15)
+            load_today += load
             store.put_activities([(act_id, day, {
                 "activityId": act_id,
-                "activityName": name,
+                "activityName": name.replace(" (key)", ""),
                 "startTimeLocal": start.strftime("%Y-%m-%d %H:%M:%S"),
                 "activityType": {"typeKey": type_key},
                 "duration": minutes * 60,
                 "distance": km * 1000 * rng.uniform(0.95, 1.05) if km else None,
-                "averageHR": int(rng.uniform(128, 158)) if type_key != "strength_training" else 112,
-                "maxHR": int(rng.uniform(165, 184)),
-                "calories": int(minutes * rng.uniform(9, 13)),
-                "elevationGain": rng.uniform(40, 300) if type_key in ("running", "road_biking") else None,
-                "activityTrainingLoad": round(load_today, 1),
-                "aerobicTrainingEffect": round(rng.uniform(2.2, 4.2), 1),
-                "anaerobicTrainingEffect": round(rng.uniform(0.3, 2.5), 1),
+                "averageHR": int(rng.uniform(128, 150)) if type_key != "strength_training" else 105,
+                "maxHR": int(rng.uniform(155, 175)),
+                "calories": int(minutes * rng.uniform(7, 12)),
+                "elevationGain": rng.uniform(20, 120) if type_key in ("running", "road_biking") else None,
+                "activityTrainingLoad": round(load, 1),
+                "aerobicTrainingEffect": round(rng.uniform(1.8, 3.6), 1),
+                "anaerobicTrainingEffect": round(rng.uniform(0.0, 1.5), 1),
             })])
         fatigue = max(0.0, fatigue * 0.6 + load_today / 200)
+
+        # VO2 max creeping back up as running returns.
+        store.put_daily("maxmetrics", day, [{
+            "generic": {"calendarDate": day, "vo2MaxPreciseValue": round(47.0 + (days - i) * 0.025 + rng.gauss(0, 0.1), 1)},
+            "cycling": {"calendarDate": day, "vo2MaxPreciseValue": 49.0},
+        }])
 
     store.set_meta("demo_seeded_for", today.isoformat())
 
 
-def upcoming_events(days: int, today: date | None = None) -> list[dict[str, Any]]:
-    """Sample calendar events for the next `days` days."""
+def calendar_events(start: date, end: date) -> list[dict[str, Any]]:
+    """Sample Google Calendar events (training, work, study) for start <= day < end."""
+    from .calendar_feed import key_reason
+    from .config import settings
     from .normalize import sport_from_title
 
-    today = today or date.today()
-    templates = [
-        ("Easy run — Z2 45min", "Keep HR under 145. Strides at the end.", (7, 0), 45),
-        ("Gym: strength & core", "Squats, RDLs, split squats, plank series.", (18, 0), 45),
-        ("Tempo run 3×10min", "10min WU, 3×10min @ threshold w/ 2min jog, CD.", (6, 30), 60),
-        ("Zwift endurance ride", "90min steady Z2, cadence 85–95.", (18, 30), 90),
-        (None, None, None, None),
-        ("Long run 20km", "Negative split last 5km. Practice fueling.", (7, 30), 110),
-        ("Swim — technique", "Drills + 10×100m aerobic.", (8, 0), 45),
-    ]
-    out = []
-    for i in range(days):
-        d = today + timedelta(days=i)
-        title, desc, hm, minutes = templates[d.weekday()]
-        if not title:
-            continue
-        start = datetime(d.year, d.month, d.day, *hm)
-        out.append({
-            "id": f"demo-{d.isoformat()}",
+    def ev(d: date, title: str, hm: tuple[int, int], minutes: int, category: str, desc: str | None = None):
+        s = datetime(d.year, d.month, d.day, *hm)
+        return {
+            "id": f"demo-{d.isoformat()}-{hm[0]:02d}{hm[1]:02d}-{category}",
             "title": title,
-            "start": start.isoformat(timespec="minutes"),
-            "end": (start + timedelta(minutes=minutes)).isoformat(timespec="minutes"),
+            "start": s.isoformat(timespec="minutes"),
+            "end": (s + timedelta(minutes=minutes)).isoformat(timespec="minutes"),
             "all_day": False,
-            "sport": sport_from_title(title),
+            "category": category,
+            "sport": sport_from_title(title) if category == "training" else None,
+            "key_reason": key_reason(title, settings.key_session_keywords),
             "description": desc,
             "location": None,
-        })
-    return out
+        }
+
+    out = []
+    d = start
+    while d < end:
+        wd = d.weekday()
+        for _, title, hm, minutes, _, _ in _WEEK_PLAN[wd]:
+            desc = {
+                "Knee rehab — physio exercises": "Step-downs, Spanish squats, single-leg RDL, TKEs. Pain ≤ 3/10.",
+                "Easy run 5 km": "Flat route, conversational pace. Stop if knee pain > 3/10.",
+                "Long run 8 km (key)": "Longest run since rehab. Soft surface, walk breaks allowed.",
+                "Zwift endurance ride": "Z2, high cadence, low resistance.",
+            }.get(title)
+            out.append(ev(d, title, hm, minutes, "training", desc))
+        if wd < 5:
+            out += [ev(d, t, hm, m, "work") for t, hm, m in _WORK[wd]]
+        out += [ev(d, t, hm, m, "study") for t, hm, m in _STUDY.get(wd, [])]
+        d += timedelta(days=1)
+
+    # A couple of one-off key dates relative to "now" so there's always something ahead.
+    today = date.today()
+    out.append(ev(today + timedelta(days=9), "Physio assessment — knee test", (16, 0), 45, "training",
+                  "Hop tests + strength benchmarks to clear return to running."))
+    out.append(ev(today + timedelta(days=12), "Statistics exam", (9, 0), 120, "study"))
+    return [e for e in out if start.isoformat() <= e["start"][:10] < end.isoformat()]

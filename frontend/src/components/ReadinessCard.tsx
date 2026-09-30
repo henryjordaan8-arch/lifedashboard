@@ -1,4 +1,4 @@
-import { titleCase } from "../format";
+import { duration, km, parseDay, SPORT_LABEL, titleCase } from "../format";
 import type { Readiness, ReadinessInput } from "../types";
 
 /** Diverging bar: how far today sits from your baseline, oriented so right = better. */
@@ -117,6 +117,43 @@ export function ReadinessCard({ data }: { data: Readiness | null }) {
           </div>
         </div>
       )}
+      {data?.fitness && (
+        <div className="load">
+          <div>
+            <div className="k">VO₂ max (run)</div>
+            <div className="v tnum">{data.fitness.vo2max_run.toFixed(1)}</div>
+          </div>
+          <div>
+            <div className="k">4-week change</div>
+            <div className="v tnum" style={{ color: data.fitness.change_28d > 0 ? "var(--good)" : "var(--ink)" }}>
+              {data.fitness.change_28d > 0 ? "+" : ""}{data.fitness.change_28d.toFixed(1)}
+            </div>
+          </div>
+          <div>
+            <div className="k">VO₂ max (ride)</div>
+            <div className="v tnum">{data.fitness.vo2max_ride?.toFixed(0) ?? "—"}</div>
+          </div>
+        </div>
+      )}
+
+      {data && data.recent.last.length > 0 && (
+        <div className="recent">
+          <div className="k">Recent sessions</div>
+          {data.recent.last.map((a) => (
+            <div className="recent-row" key={a.id}>
+              <span className="dot" style={{ background: `var(--sport-${a.sport})` }} />
+              <span className="nm">{a.name}</span>
+              <span className="muted tnum">
+                {parseDay(a.date).toLocaleDateString(undefined, { weekday: "short" })} · {a.distance_m ? km(a.distance_m) : duration(a.duration_s)}
+              </span>
+              <span className="ld tnum" title={`${SPORT_LABEL[a.sport]} · load ${Math.round(a.training_load ?? 0)}`}>
+                {a.hard ? "▲ hard" : `load ${Math.round(a.training_load ?? 0)}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <p className="note">Bars point right when today is better than usual for you (e.g. higher HRV, lower resting HR).</p>
     </section>
   );

@@ -1,4 +1,5 @@
-export type Sport = "run" | "ride" | "swim" | "strength" | "other";
+export type Sport = "run" | "ride" | "swim" | "strength" | "rehab" | "other";
+export type Category = "training" | "work" | "study" | "other";
 
 export interface Status {
   mode: "demo" | "garmin";
@@ -55,15 +56,60 @@ export interface Activity {
   anaerobic_te: number | null;
 }
 
-export interface PlannedSession {
+export interface CalEvent {
   id: string;
   title: string;
   start: string;
   end: string;
   all_day: boolean;
-  sport: Sport;
+  category: Category;
+  sport: Sport | null;
+  key_reason: string | null;
   description: string | null;
   location: string | null;
+  completed_by?: { id: number; name: string; start: string; duration_s: number | null; distance_m: number | null } | null;
+}
+
+export interface DayPlan {
+  date: string;
+  configured: boolean;
+  events: CalEvent[];
+  hours: Record<Category, number>;
+  unplanned_activities: Activity[];
+}
+
+export interface WeekGoal {
+  id: string;
+  label: string;
+  metric: string;
+  mode: "at_least" | "at_most";
+  unit: string;
+  target: number;
+  progress: number;
+  planned: number;
+  done: boolean;
+  status: "done" | "on_track" | "behind" | "over" | "todo";
+  items: string[];
+}
+
+export interface Week {
+  week_start: string;
+  week_end: string;
+  using_example: boolean;
+  goals: WeekGoal[];
+}
+
+export interface RecentActivity {
+  id: number;
+  name: string;
+  sport: Sport;
+  date: string;
+  duration_s: number | null;
+  distance_m: number | null;
+  training_load: number | null;
+  aerobic_te: number | null;
+  anaerobic_te: number | null;
+  hard: boolean;
 }
 
 export interface ReadinessInput {
@@ -85,5 +131,22 @@ export interface Readiness {
   inputs: ReadinessInput[];
   load: { acute: number; chronic: number; ratio: number | null; yesterday: number };
   garmin: { score: number | null; level: string | null; feedback: string | null } | null;
+  recent: {
+    sessions_7d: number;
+    hard_7d: number;
+    rehab_7d: number;
+    days_since_hard: number | null;
+    run_km_7d: number;
+    run_km_prior_week_avg: number;
+    run_ramp_pct: number | null;
+    last: RecentActivity[];
+  };
+  fitness: {
+    vo2max_run: number;
+    vo2max_ride: number | null;
+    as_of: string;
+    change_28d: number;
+    history: { date: string; value: number }[];
+  } | null;
   baseline_days: number;
 }

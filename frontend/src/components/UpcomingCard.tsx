@@ -1,8 +1,8 @@
 import { clock, duration, parseDay, relativeDay, SPORT_LABEL } from "../format";
-import type { PlannedSession } from "../types";
+import type { CalEvent } from "../types";
 
-export function UpcomingCard({ events, configured }: { events: PlannedSession[]; configured: boolean }) {
-  const groups = new Map<string, PlannedSession[]>();
+export function UpcomingCard({ events, configured }: { events: CalEvent[]; configured: boolean }) {
+  const groups = new Map<string, CalEvent[]>();
   for (const e of events) {
     const d = e.start.slice(0, 10);
     groups.set(d, [...(groups.get(d) ?? []), e]);
@@ -35,14 +35,14 @@ export function UpcomingCard({ events, configured }: { events: PlannedSession[];
               const mins = e.all_day ? null : (new Date(e.end).getTime() - new Date(e.start).getTime()) / 1000;
               return (
                 <div className={`session ${e.id === nextId ? "next" : ""}`} key={e.id}>
-                  <div className="bar" style={{ background: `var(--sport-${e.sport})` }} />
+                  <div className="bar" style={{ background: `var(--sport-${e.sport ?? "other"})` }} />
                   <div style={{ minWidth: 0 }}>
                     <div className="row1">
                       <span className="title">{e.title}</span>
                       <span className="time tnum">{e.all_day ? "All day" : `${clock(e.start)}–${clock(e.end)}`}</span>
                     </div>
                     <div className="tag">
-                      {SPORT_LABEL[e.sport]}
+                      {SPORT_LABEL[e.sport ?? "other"]}
                       {mins ? ` · ${duration(mins)}` : ""}
                       {e.location ? ` · ${e.location}` : ""}
                     </div>

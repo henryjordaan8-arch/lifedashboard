@@ -28,7 +28,21 @@ class Settings:
         default_factory=lambda: os.getenv("GARMIN_TOKENSTORE", "~/.garminconnect")
     )
     gcal_ics_urls: list[str] = field(default_factory=lambda: _list("GCAL_ICS_URLS"))
-    gcal_keywords: list[str] = field(default_factory=lambda: _list("GCAL_KEYWORDS"))
+    # Extra title words for categorising events from GCAL_ICS_URLS (added to built-in defaults).
+    training_keywords: list[str] = field(default_factory=lambda: _list("TRAINING_KEYWORDS"))
+    work_keywords: list[str] = field(default_factory=lambda: _list("WORK_KEYWORDS"))
+    study_keywords: list[str] = field(default_factory=lambda: _list("STUDY_KEYWORDS"))
+    # Calendars whose events all belong to one category (no keyword guessing needed).
+    gcal_training_urls: list[str] = field(default_factory=lambda: _list("GCAL_TRAINING_ICS_URLS"))
+    gcal_work_urls: list[str] = field(default_factory=lambda: _list("GCAL_WORK_ICS_URLS"))
+    gcal_study_urls: list[str] = field(default_factory=lambda: _list("GCAL_STUDY_ICS_URLS"))
+    key_session_keywords: list[str] = field(
+        default_factory=lambda: _list("KEY_SESSION_KEYWORDS")
+        or ["key", "race", "test", "exam", "deadline", "long run", "tempo", "interval"]
+    )
+    goals_path: Path = field(
+        default_factory=lambda: BACKEND_DIR / os.getenv("GOALS_PATH", "goals.json")
+    )
     demo_mode: bool = field(default_factory=lambda: _bool("DEMO_MODE"))
     backfill_days: int = field(default_factory=lambda: int(os.getenv("BACKFILL_DAYS", "90")))
     sync_interval_minutes: int = field(
@@ -40,3 +54,13 @@ class Settings:
 
 
 settings = Settings()
+
+
+def calendar_sources(cfg: Settings) -> list[tuple[str | None, str]]:
+    """(category or None for "infer from title", url) for every configured feed."""
+    return (
+        [(None, u) for u in cfg.gcal_ics_urls]
+        + [("training", u) for u in cfg.gcal_training_urls]
+        + [("work", u) for u in cfg.gcal_work_urls]
+        + [("study", u) for u in cfg.gcal_study_urls]
+    )

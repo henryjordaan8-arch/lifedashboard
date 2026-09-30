@@ -1,22 +1,32 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import { ReadinessCard } from "./components/ReadinessCard";
+import { TodayView } from "./components/TodayView";
 import { SleepCard } from "./components/SleepCard";
 import { TrainingCalendar } from "./components/TrainingCalendar";
 import { UpcomingCard } from "./components/UpcomingCard";
 import { ago } from "./format";
-import type { PlannedSession, Readiness, SleepNight, Status } from "./types";
+import type { CalEvent, Readiness, SleepNight, Status } from "./types";
 
 function greeting() {
   const h = new Date().getHours();
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
+type Tab = "today" | "overview";
+const tabFromHash = (): Tab => (window.location.hash === "#/overview" ? "overview" : "today");
+
 export function App() {
+  const [tab, setTab] = useState<Tab>(tabFromHash);
+  useEffect(() => {
+    const on = () => setTab(tabFromHash());
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
   const [status, setStatus] = useState<Status | null>(null);
   const [nights, setNights] = useState<SleepNight[]>([]);
   const [readiness, setReadiness] = useState<Readiness | null>(null);
-  const [upcoming, setUpcoming] = useState<{ configured: boolean; events: PlannedSession[] }>({ configured: true, events: [] });
+  const [upcoming, setUpcoming] = useState<{ configured: boolean; events: CalEvent[] }>({ configured: true, events: [] });
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +82,10 @@ export function App() {
             {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </div>
         </div>
+        <nav className="tabs" aria-label="Views">
+          <a href="#/today" className={tab === "today" ? "on" : ""}>Today</a>
+          <a href="#/overview" className={tab === "overview" ? "on" : ""}>Training &amp; sleep</a>
+        </nav>
         <div className="sync">
           <span className={pillClass} title={status?.last_error ?? undefined}>
             <span className="dot" />
@@ -90,12 +104,16 @@ export function App() {
         </div>
       )}
 
-      <main className="grid">
-        <SleepCard nights={nights} />
-        <ReadinessCard data={readiness} />
-        <TrainingCalendar planned={upcoming.events} refreshKey={refreshKey} />
-        <UpcomingCard events={upcoming.events} configured={upcoming.configured} />
-      </main>
+      {tab === "today" ? (
+        <TodayView nights={nights} readiness={readiness} refreshKey={refreshKey} />
+      ) : (
+        <main className="grid">
+          <SleepCard nights={nights} />
+          <ReadinessCard data={readiness} />
+          <TrainingCalendar planned={upcoming.events} refreshKey={refreshKey} />
+          <UpcomingCard events={upcoming.events} configured={upcoming.configured} />
+        </main>
+      )}
     </div>
   );
 }

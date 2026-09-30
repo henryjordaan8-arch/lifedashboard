@@ -55,13 +55,14 @@ def sync(client: Any, store: Store, backfill_days: int, today: date | None = Non
     """Fetch anything missing (or recent) for the last `backfill_days` days."""
     today = today or date.today()
     start = today - timedelta(days=backfill_days)
-    counts = {"sleep": 0, "hrv": 0, "stats": 0, "readiness": 0, "activities": 0}
+    counts = {"sleep": 0, "hrv": 0, "stats": 0, "readiness": 0, "maxmetrics": 0, "activities": 0}
 
     fetchers: dict[str, Callable[[str], Any]] = {
         "sleep": client.get_sleep_data,
         "hrv": client.get_hrv_data,
         "stats": client.get_stats,
         "readiness": client.get_training_readiness,
+        "maxmetrics": client.get_max_metrics,  # VO2 max
     }
 
     for d in _days(start, today):

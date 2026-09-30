@@ -58,14 +58,74 @@ def _local_ms(dt: datetime) -> int:
     return int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 
-def seed(store: Store, days: int, today: date | None = None, rng_seed: int = 7) -> None:
+def _detail(type_key: str, name: str, minutes: float, fit: float, rng: random.Random) -> dict[str, Any]:
+    """Sport-specific Garmin summary fields; `fit` goes 0 -> 1 as fitness builds over the demo year."""
+    quality = any(w in name.lower() for w in ("vo2", "tempo", "sweet spot", "interval"))
+    secs = minutes * 60
+    if type_key == "running":
+        pace = (360 - 35 * fit) - (45 if quality else 0) + rng.gauss(0, 6)  # s/km
+        dist = secs / pace * 1000
+        cadence = 164 + 8 * fit + (4 if quality else 0) + rng.gauss(0, 1.5)
+        hr = (165 if quality else 149 - 6 * fit) + rng.gauss(0, 2.5)
+        zones = [0.08, 0.25, 0.27, 0.3, 0.1] if quality else [0.1, 0.62, 0.23, 0.05, 0.0]
+        splits = {"fastestSplit_1000": pace * (0.86 if quality else 0.95)}
+        if dist >= 5000:
+            splits["fastestSplit_5000"] = pace * 5 * (0.97 if quality else 0.99)
+        if dist >= 10000:
+            splits["fastestSplit_10000"] = pace * 10 * 0.995
+        return {
+            "distance": dist, "movingDuration": secs * 0.98, "averageSpeed": dist / secs,
+            "averageHR": int(hr), "maxHR": int(hr + rng.uniform(12, 20)),
+            "averageRunningCadenceInStepsPerMinute": round(cadence, 1),
+            "avgStrideLength": round((dist / secs) / (cadence / 60) * 100, 1),
+            "elevationGain": rng.uniform(30, 160),
+            **{f"hrTimeInZone_{i + 1}": secs * z for i, z in enumerate(zones)}, **splits,
+        }
+    if type_key in ("road_biking", "virtual_ride"):
+        ftp = 245 + 25 * fit
+        avg_p = ftp * (0.8 if quality else 0.66) + rng.gauss(0, 5)
+        np_ = avg_p * (1.1 if quality else 1.04)
+        speed = (29 + 2 * fit) * (1.03 if quality else 1) + rng.gauss(0, 0.8)  # km/h
+        hr = (156 if quality else 139 - 4 * fit) + rng.gauss(0, 2.5)
+        if_ = np_ / ftp
+        zones = [0.1, 0.35, 0.3, 0.22, 0.03] if quality else [0.12, 0.7, 0.16, 0.02, 0.0]
+        return {
+            "distance": speed * secs / 3.6, "movingDuration": secs * 0.97, "averageSpeed": speed / 3.6,
+            "averageHR": int(hr), "maxHR": int(hr + rng.uniform(15, 25)),
+            "avgPower": round(avg_p), "normPower": round(np_),
+            "max20MinPower": round(ftp * (0.95 if quality else 0.78) + rng.gauss(0, 4)),
+            "intensityFactor": round(if_, 2), "trainingStressScore": round(secs / 3600 * if_ ** 2 * 100),
+            "averageBikingCadenceInRevPerMinute": round(88 + rng.gauss(0, 2), 1),
+            "elevationGain": rng.uniform(100, 700) if type_key == "road_biking" else rng.uniform(50, 300),
+            **{f"hrTimeInZone_{i + 1}": secs * z for i, z in enumerate(zones)},
+        }
+    if type_key == "lap_swimming":
+        pace100 = 135 - 17 * fit + rng.gauss(0, 3)
+        dist = round(secs * 0.85 / pace100 * 100 / 50) * 50  # ~15% rest at the wall
+        hr = 138 + rng.gauss(0, 3)
+        return {
+            "distance": dist, "movingDuration": dist / 100 * pace100, "averageSpeed": 100 / pace100,
+            "averageHR": int(hr), "maxHR": int(hr + 18), "poolLength": 25,
+            "averageSwolf": round(42 - 6 * fit + rng.gauss(0, 1), 1),
+            "averageSwimCadenceInStrokesPerMinute": round(26 + 3 * fit + rng.gauss(0, 0.8), 1),
+            "strokes": int(dist / 25 * (18 - 3 * fit)),
+            **{f"hrTimeInZone_{i + 1}": secs * z for i, z in enumerate([0.15, 0.5, 0.3, 0.05, 0.0])},
+        }
+    return {"averageHR": 105 + int(rng.gauss(0, 4)), "maxHR": 140}
+
+
+def seed(
+    store: Store, days: int, today: date | None = None, rng_seed: int = 7, activity_days: int = 365
+) -> None:
     today = today or date.today()
     rng = random.Random(rng_seed)
     hrv_base, rhr_base = 62.0, 47.0
     fatigue = 0.0
     act_id = 9_000_000_000
+    span = max(days, min(activity_days, 730))
 
-    for i in range(days, -1, -1):
+    for i in range(span, -1, -1):
+        fit = 1 - i / span
         d = today - timedelta(days=i)
         day = d.isoformat()
 
@@ -130,7 +190,7 @@ def seed(store: Store, days: int, today: date | None = None, rng_seed: int = 7) 
 
         # Activities: follow the plan, skip the odd session, nothing yet for today.
         load_today = 0.0
-        for type_key, name, (hh, mm), minutes, km, load in (_WEEK_PLAN[d.weekday()] if i > 0 else []):
+        for type_key, name, (hh, mm), minutes, _km, load in (_WEEK_PLAN[d.weekday()] if i > 0 else []):
             if rng.random() < 0.1:
                 continue
             minutes = minutes * rng.uniform(0.9, 1.1)
@@ -138,27 +198,25 @@ def seed(store: Store, days: int, today: date | None = None, rng_seed: int = 7) 
             start = datetime(d.year, d.month, d.day, hh, mm) + timedelta(minutes=rng.randint(-10, 20))
             load *= rng.uniform(0.85, 1.15)
             load_today += load
+            quality = any(w in name.lower() for w in ("vo2", "tempo", "sweet spot"))
             store.put_activities([(act_id, day, {
                 "activityId": act_id,
-                "activityName": name.replace(" (key)", ""),
+                "activityName": name,
                 "startTimeLocal": start.strftime("%Y-%m-%d %H:%M:%S"),
                 "activityType": {"typeKey": type_key},
                 "duration": minutes * 60,
-                "distance": km * 1000 * rng.uniform(0.95, 1.05) if km else None,
-                "averageHR": int(rng.uniform(128, 150)) if type_key != "strength_training" else 105,
-                "maxHR": int(rng.uniform(155, 175)),
                 "calories": int(minutes * rng.uniform(7, 12)),
-                "elevationGain": rng.uniform(20, 120) if type_key in ("running", "road_biking") else None,
                 "activityTrainingLoad": round(load, 1),
-                "aerobicTrainingEffect": round(rng.uniform(1.8, 3.6), 1),
-                "anaerobicTrainingEffect": round(rng.uniform(0.0, 1.5), 1),
+                "aerobicTrainingEffect": round(rng.uniform(3.2, 4.2) if quality else rng.uniform(1.8, 3.2), 1),
+                "anaerobicTrainingEffect": round(rng.uniform(1.8, 3.2) if quality else rng.uniform(0.0, 1.0), 1),
+                **_detail(type_key, name, minutes, fit, rng),
             })])
         fatigue = max(0.0, fatigue * 0.6 + load_today / 200)
 
-        # VO2 max creeping back up as running returns.
+        # VO2 max rising slowly with fitness.
         store.put_daily("maxmetrics", day, [{
-            "generic": {"calendarDate": day, "vo2MaxPreciseValue": round(47.0 + (days - i) * 0.025 + rng.gauss(0, 0.1), 1)},
-            "cycling": {"calendarDate": day, "vo2MaxPreciseValue": 49.0},
+            "generic": {"calendarDate": day, "vo2MaxPreciseValue": round(47.0 + 4 * fit + rng.gauss(0, 0.1), 1)},
+            "cycling": {"calendarDate": day, "vo2MaxPreciseValue": round(49.0 + 3 * fit + rng.gauss(0, 0.1), 1)},
         }])
 
     store.set_meta("demo_seeded_for", today.isoformat())

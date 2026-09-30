@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import { ReadinessCard } from "./components/ReadinessCard";
+import { SportView } from "./components/SportView";
 import { TodayView } from "./components/TodayView";
 import { SleepCard } from "./components/SleepCard";
 import { TrainingCalendar } from "./components/TrainingCalendar";
@@ -13,8 +14,15 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-type Tab = "dashboard" | "today";
-const tabFromHash = (): Tab => (window.location.hash === "#/today" ? "today" : "dashboard");
+const TABS = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "today", label: "Today" },
+  { id: "run", label: "Running" },
+  { id: "ride", label: "Cycling" },
+  { id: "swim", label: "Swimming" },
+] as const;
+type Tab = (typeof TABS)[number]["id"];
+const tabFromHash = (): Tab => TABS.find((t) => `#/${t.id}` === window.location.hash)?.id ?? "dashboard";
 
 export function App() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
@@ -83,8 +91,11 @@ export function App() {
           </div>
         </div>
         <nav className="tabs" aria-label="Views">
-          <a href="#/dashboard" className={tab === "dashboard" ? "on" : ""}>Dashboard</a>
-          <a href="#/today" className={tab === "today" ? "on" : ""}>Today</a>
+          {TABS.map((t) => (
+            <a key={t.id} href={`#/${t.id}`} className={tab === t.id ? "on" : ""} aria-current={tab === t.id ? "page" : undefined}>
+              {t.label}
+            </a>
+          ))}
         </nav>
         <div className="sync">
           <span className={pillClass} title={status?.last_error ?? undefined}>
@@ -106,6 +117,8 @@ export function App() {
 
       {tab === "today" ? (
         <TodayView refreshKey={refreshKey} />
+      ) : tab === "run" || tab === "ride" || tab === "swim" ? (
+        <SportView sport={tab} refreshKey={refreshKey} />
       ) : (
         <main className="grid">
           <SleepCard nights={nights} />

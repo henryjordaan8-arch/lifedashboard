@@ -6,6 +6,8 @@ A personal desktop dashboard for Garmin data, training, work and study.
 
 ![Today view with demo data](docs/today.png)
 
+![Running tab with demo data](docs/running.png)
+
 
 **Dashboard** tab:
 
@@ -19,6 +21,22 @@ A personal desktop dashboard for Garmin data, training, work and study.
 - **Your day**: an hour-by-hour plan from Google Calendar, colour-coded as training, work, study, reading, personal or other, with hours per area and a bar showing how the day is split. Planned training is checked against Garmin: ✓ done, or flagged if nothing matching was recorded. Garmin activities that weren't on the calendar show up too. Use ‹ › to move between days.
 - **Key sessions ahead**: your quality sessions for the next 3 weeks: tempo, threshold, VO₂ max and interval runs, and structured bike sessions (sweet spot, FTP, over-unders, or reps like `3×12min`). Base sessions (easy, long, Z2, endurance, recovery), swims and gym are never key. Put a ★ in any event title to mark it by hand, or add title words with `KEY_SESSION_KEYWORDS`.
 - **This week**: a checklist that ticks itself from Garmin and calendar data. Goals live in `backend/goals.json`; see below.
+
+**Running / Cycling / Swimming** tabs, one dashboard per sport. Pick a range (3M · 6M · 1Y · 2Y):
+
+- **Headline numbers** for the range compared with the previous one: sessions, distance, time and key sessions, plus pace for running, power and speed for cycling, and pace and SWOLF for swimming. Performance changes are green or red; volume changes stay neutral, since doing less can be a deliberate taper.
+- **Weekly volume** as distance, time or training load.
+- **Progress charts** with a 4-week rolling average:
+  - Running: pace, aerobic efficiency (metres per minute per heartbeat) and VO₂ max.
+  - Cycling: average power, aerobic efficiency (normalised watts per heartbeat) and VO₂ max.
+  - Swimming: pace per 100 m, SWOLF and stroke rate.
+
+  Key and base sessions get separate average lines, because a VO₂ session is faster than an easy run by design. The "% better" figure compares the first and last 4 weeks of the range, using base sessions when there are enough of them.
+- **Personal bests** across all synced history, flagged when set in the current range: fastest 1 km, 5 km and 10 km, and longest run; best 20-min power and longest ride; fastest pace per 100 m, best SWOLF and longest swim.
+- **Intensity**: time in heart-rate zones Z1–Z5, and the key vs base session split.
+- **Sessions table**, sortable by any column, with ★ on key sessions.
+
+Activity history is synced for `ACTIVITY_BACKFILL_DAYS`, 2 years by default. It's a single request, so it's cheap. Metrics that need a particular sensor (power meter, running dynamics, pool swim) only appear when Garmin has them.
 
 ## Readiness score (v1)
 

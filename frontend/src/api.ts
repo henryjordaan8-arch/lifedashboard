@@ -1,4 +1,4 @@
-import type { Activity, CalEvent, DayPlan, Readiness, SleepNight, Status, Week } from "./types";
+import type { Activity, CalEvent, DayPlan, Readiness, SleepNight, SportData, SportKey, Status, Week } from "./types";
 
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init);
@@ -14,6 +14,7 @@ export const api = {
     get<{ activities: Activity[] }>(`/api/activities?start=${start}&end=${end}`).then((r) => r.activities),
   upcoming: (days: number) => get<{ configured: boolean; events: CalEvent[] }>(`/api/upcoming?days=${days}`),
   readiness: () => get<Readiness>("/api/readiness"),
+  sport: (name: SportKey, days: number) => get<SportData>(`/api/sport/${name}?days=${days}`),
   day: (date: string) => get<DayPlan>(`/api/day?date=${date}`),
   keySessions: (days: number) => get<{ events: CalEvent[] }>(`/api/key-sessions?days=${days}`).then((r) => r.events),
   week: (date: string) => get<Week>(`/api/week?date=${date}`),

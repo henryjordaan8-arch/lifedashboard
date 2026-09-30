@@ -163,3 +163,68 @@ export interface Readiness {
   } | null;
   baseline_days: number;
 }
+
+export type SportKey = "run" | "ride" | "swim";
+
+export interface SportSession extends Activity {
+  moving_s: number | null;
+  avg_speed_ms: number | null;
+  cadence: number | null;
+  stride_m: number | null;
+  avg_power: number | null;
+  norm_power: number | null;
+  max_20min_power: number | null;
+  tss: number | null;
+  swolf: number | null;
+  pool_length_m: number | null;
+  hr_zones_s: number[] | null;
+  metrics: Record<string, number | null>;
+  key: string | null;
+}
+
+export interface SportSummary {
+  sessions: number;
+  distance_km: number;
+  duration_h: number;
+  elevation_m: number;
+  avg_hr: number | null;
+  load: number;
+  key_sessions: number;
+  pace?: number | null;
+  swolf?: number | null;
+  power?: number | null;
+  speed_kmh?: number | null;
+}
+
+export interface TrendSeries {
+  key: string;
+  label: string;
+  unit: string;
+  direction: 1 | -1 | 0;
+  points: { date: string; value: number; name: string; key: string | null }[];
+  change: { from: number; to: number; pct: number | null; group: "base" | "all" } | null;
+}
+
+export interface SportBest {
+  label: string;
+  kind: "time" | "pace_km" | "pace_100" | "km" | "m" | "watts" | "number";
+  value: number;
+  date: string;
+  name: string;
+  recent: boolean;
+}
+
+export interface SportData {
+  sport: SportKey;
+  start: string;
+  end: string;
+  summary: SportSummary;
+  previous: SportSummary;
+  weekly: { week_start: string; distance_km: number; duration_h: number; sessions: number; key_sessions: number; load: number }[];
+  trends: TrendSeries[];
+  bests: SportBest[];
+  zones_s: number[] | null;
+  vo2max: { date: string; value: number }[];
+  sessions: SportSession[];
+  history_start: string | null;
+}

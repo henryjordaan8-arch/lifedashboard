@@ -51,7 +51,13 @@ def _days(start: date, end: date):
         d += timedelta(days=1)
 
 
-def sync(client: Any, store: Store, backfill_days: int, today: date | None = None) -> dict[str, int]:
+def sync(
+    client: Any,
+    store: Store,
+    backfill_days: int,
+    today: date | None = None,
+    activity_backfill_days: int | None = None,
+) -> dict[str, int]:
     """Fetch anything missing (or recent) for the last `backfill_days` days."""
     today = today or date.today()
     start = today - timedelta(days=backfill_days)
@@ -83,9 +89,9 @@ def sync(client: Any, store: Store, backfill_days: int, today: date | None = Non
 
     # Activities: one ranged call covers the whole window.
     since = store.get_meta("activities_synced_until")
-    act_start = start
+    act_start = today - timedelta(days=max(backfill_days, activity_backfill_days or 0))
     if since:
-        act_start = max(start, date.fromisoformat(since) - timedelta(days=REFRESH_RECENT_DAYS))
+        act_start = max(act_start, date.fromisoformat(since) - timedelta(days=REFRESH_RECENT_DAYS))
     items = client.get_activities_by_date(act_start.isoformat(), today.isoformat()) or []
     store.put_activities(
         (int(a["activityId"]), str(a.get("startTimeLocal", ""))[:10], a)

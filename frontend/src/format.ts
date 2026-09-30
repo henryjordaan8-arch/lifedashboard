@@ -89,3 +89,17 @@ export function titleCase(s: string | null | undefined): string {
   if (!s) return "";
   return s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+/** 307 -> "5:07" */
+export function mmss(seconds: number | null | undefined): string {
+  if (seconds == null || !isFinite(seconds)) return "—";
+  const s = Math.round(seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = String(s % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+}
+
+export function shortDate(day: string, withYear = false): string {
+  return parseDay(day).toLocaleDateString(undefined, { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
+}

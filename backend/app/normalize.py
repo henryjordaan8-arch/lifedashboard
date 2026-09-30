@@ -172,7 +172,36 @@ def activity(raw: dict[str, Any]) -> dict[str, Any] | None:
         "training_load": _num(raw.get("activityTrainingLoad")),
         "aerobic_te": _num(raw.get("aerobicTrainingEffect")),
         "anaerobic_te": _num(raw.get("anaerobicTrainingEffect")),
+        # --- sport detail (all optional; depends on sport, device and sensors) ---
+        "moving_s": _int(raw.get("movingDuration")),
+        "avg_speed_ms": _num(raw.get("averageSpeed")),
+        "max_speed_ms": _num(raw.get("maxSpeed")),
+        "cadence": _num(
+            raw.get("averageRunningCadenceInStepsPerMinute")
+            or raw.get("averageBikingCadenceInRevPerMinute")
+            or raw.get("averageSwimCadenceInStrokesPerMinute")
+        ),
+        "stride_m": (_num(raw.get("avgStrideLength")) or 0) / 100 or None,  # Garmin reports cm
+        "avg_power": _num(raw.get("avgPower")),
+        "norm_power": _num(raw.get("normPower")),
+        "max_20min_power": _num(raw.get("max20MinPower")),
+        "tss": _num(raw.get("trainingStressScore")),
+        "intensity_factor": _num(raw.get("intensityFactor")),
+        "swolf": _num(raw.get("averageSwolf")),
+        "pool_length_m": _num(raw.get("poolLength")),
+        "strokes": _int(raw.get("strokes")),
+        "hr_zones_s": _zones(raw),
+        "best_splits_s": {
+            label: _num(raw.get(f"fastestSplit_{meters}"))
+            for label, meters in (("1k", 1000), ("mile", 1609), ("5k", 5000), ("10k", 10000), ("half", 21098))
+            if _num(raw.get(f"fastestSplit_{meters}"))
+        },
     }
+
+
+def _zones(raw: dict[str, Any]) -> list[float] | None:
+    zones = [_num(raw.get(f"hrTimeInZone_{i}")) for i in range(1, 6)]
+    return None if all(z is None for z in zones) else [z or 0.0 for z in zones]
 
 
 def vo2max(day: str, raw: Any) -> dict[str, Any] | None:

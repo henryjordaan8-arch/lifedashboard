@@ -12,7 +12,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
-from . import calendar_feed, demo, garmin, normalize, planner, readiness
+from . import calendar_feed, demo, garmin, normalize, planner, readiness, sport
 from .config import BACKEND_DIR, Settings, calendar_sources, settings as default_settings
 from .store import Store
 
@@ -49,12 +49,15 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
         state.running = True
         try:
             if cfg.demo_mode:
-                demo.seed(store, cfg.backfill_days)
+                demo.seed(store, cfg.backfill_days, activity_days=cfg.activity_backfill_days)
                 state.last_counts = {"demo": 1}
             else:
                 if "client" not in client_holder:
                     client_holder["client"] = garmin.connect(cfg)
-                state.last_counts = garmin.sync(client_holder["client"], store, cfg.backfill_days)
+                state.last_counts = garmin.sync(
+                    client_holder["client"], store, cfg.backfill_days,
+                    activity_backfill_days=cfg.activity_backfill_days,
+                )
             state.last_sync = datetime.now(timezone.utc).isoformat(timespec="seconds")
             state.last_error = None
         except Exception as exc:  # noqa: BLE001
@@ -210,6 +213,21 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
     def tick(body: ManualTick) -> dict[str, Any]:
         store.set_meta(_manual_key(_day(body.week_start).isoformat(), body.goal_id), "1" if body.done else "0")
         return week(body.week_start)
+
+    @app.get("/api/sport/{name}")
+    def sport_dashboard(name: str, days: int = Query(182, ge=7, le=3650)) -> dict[str, Any]:
+        if name not in sport.SPORTS:
+            raise HTTPException(404, f"unknown sport {name!r}; use one of {', '.join(sport.SPORTS)}")
+        end = date.today()
+        start = end - timedelta(days=days - 1)
+        acts = activities_between("0000-01-01", end.isoformat())
+        vo2 = []
+        if name in ("run", "ride"):
+            for d, raw in store.get_daily("maxmetrics", start.isoformat(), end.isoformat()).items():
+                v = normalize.vo2max(d, raw)
+                if v and v.get(name) is not None:
+                    vo2.append({"date": d, "value": v[name]})
+        return sport.sport_view(name, acts, vo2, start, end, cfg.key_session_keywords)
 
     @app.get("/api/readiness")
     def readiness_inputs() -> dict[str, Any]:

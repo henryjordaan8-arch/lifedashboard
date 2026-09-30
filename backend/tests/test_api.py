@@ -76,6 +76,15 @@ def test_demo_end_to_end(tmp_path):
         assert r["recent"]["sessions_7d"] > 0
 
 
+def test_sport_dashboards():
+    with make_client() as c:
+        c.post("/api/sync")
+        for name in ("run", "ride", "swim"):
+            r = c.get(f"/api/sport/{name}?days=182").json()
+            assert r["summary"]["sessions"] > 5 and r["trends"] and r["bests"] and r["weekly"]
+        assert c.get("/api/sport/rowing").status_code == 404
+
+
 def test_activities_rejects_bad_dates():
     with make_client() as c:
         assert c.get("/api/activities?start=nope&end=2026-01-01").status_code == 400

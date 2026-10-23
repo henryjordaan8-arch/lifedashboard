@@ -249,6 +249,8 @@ function Zones({ zones, names = ZONE_NAMES, what = "heart-rate" }: { zones: numb
   );
 }
 
+const PAGE_ROWS = 15;
+
 function SessionsTable({ sessions, columns }: { sessions: SportSession[]; columns: Column[] }) {
   const [sort, setSort] = useState<{ i: number; desc: boolean }>({ i: 0, desc: true });
   const [all, setAll] = useState(false);
@@ -263,7 +265,7 @@ function SessionsTable({ sessions, columns }: { sessions: SportSession[]; column
       return sort.desc ? -c : c;
     });
   }, [sessions, columns, sort]);
-  const shown = all ? rows : rows.slice(0, 12);
+  const shown = all ? rows : rows.slice(0, PAGE_ROWS);
   return (
     <div>
       <div className="table-wrap">
@@ -294,7 +296,7 @@ function SessionsTable({ sessions, columns }: { sessions: SportSession[]; column
                   else if (v == null || v === "") text = "—";
                   else text = typeof v === "number" && c.fmt ? c.fmt(v) : String(v);
                   return (
-                    <td key={i} className={c.num ? "num tnum" : ""}>
+                    <td key={i} className={c.num ? "num tnum" : c.label === "Session" ? "name-cell" : ""} title={c.label === "Session" ? String(v ?? "") : undefined}>
                       {c.label === "Session" && s.key ? (
                         <span title={s.key}><span className="key-star" aria-label="Key session">★</span>{text}</span>
                       ) : (
@@ -308,7 +310,7 @@ function SessionsTable({ sessions, columns }: { sessions: SportSession[]; column
           </tbody>
         </table>
       </div>
-      {rows.length > 12 && (
+      {rows.length > PAGE_ROWS && (
         <button className="btn link" onClick={() => setAll(!all)}>
           {all ? "Show fewer" : `Show all ${rows.length} sessions`}
         </button>
@@ -522,19 +524,7 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
               <PredictionsCard data={loaded} color={cfg.color} />
             </>
           )}
-          {sport === "ride" && (
-            <>
-              <section className="card span-4">
-                <div className="card-head">
-                  <h2>Power zones</h2>
-                  <span className="sub">time in power zones</span>
-                </div>
-                <Zones zones={loaded.power_zones_s} names={POWER_ZONE_NAMES} what="power" />
-              </section>
-              <FtpCard data={loaded} color={cfg.color} />
-            </>
-          )}
-          {sport === "swim" && <CssCard data={loaded} color={cfg.color} />}
+          {sport === "ride" && <FtpCard data={loaded} color={cfg.color} />}
 
           <section className="card span-8">
             <div className="card-head">
@@ -543,7 +533,8 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
             </div>
             <SessionsTable sessions={loaded.sessions} columns={cfg.columns} />
           </section>
-          <section className="card span-4">
+          <div className="span-4 stack">
+          <section className="card">
             <div className="card-head">
               <h2>Intensity</h2>
               <span className="sub">time in heart-rate zones</span>
@@ -562,7 +553,18 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
             </div>
             )}
           </section>
-          {sport === "run" && <ShoesCard data={loaded} />}
+          {sport === "ride" && (
+            <section className="card">
+              <div className="card-head">
+                <h2>Power zones</h2>
+                <span className="sub">time in power zones</span>
+              </div>
+              <Zones zones={loaded.power_zones_s} names={POWER_ZONE_NAMES} what="power" />
+            </section>
+          )}
+          {sport === "run" && <ShoesCard data={loaded} compact />}
+          {sport === "swim" && <CssCard data={loaded} color={cfg.color} />}
+          </div>
         </>
       )}
       {loaded && expanded && (() => {

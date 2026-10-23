@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { clock, duration, parseDay, titleCase } from "../format";
 import type { SleepNight } from "../types";
 import { NightTrend } from "./NightTrend";
@@ -21,7 +22,7 @@ function Delta({ now, base, unit = "", invert = false }: { now: number | null; b
   );
 }
 
-export function SleepCard({ nights }: { nights: SleepNight[] }) {
+export function SleepCard({ nights, children }: { nights: SleepNight[]; children?: ReactNode }) {
   if (!nights.length) {
     return (
       <section className="card span-8">
@@ -122,6 +123,7 @@ export function SleepCard({ nights }: { nights: SleepNight[] }) {
           <NightTrend nights={recent} all={nights} />
         </div>
       </div>
+      {children}
     </section>
   );
 }

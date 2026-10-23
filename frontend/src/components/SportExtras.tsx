@@ -131,20 +131,20 @@ export function PredictionsCard({ data, color }: { data: SportData; color: strin
 }
 
 /** Distance on each pair of running shoes against its replacement mileage. */
-export function ShoesCard({ data }: { data: SportData }) {
+export function ShoesCard({ data, compact = false }: { data: SportData; compact?: boolean }) {
   const shoes = data.shoes ?? [];
   const active = shoes.filter((s) => !s.retired);
   const retired = shoes.length - active.length;
   return (
-    <section className="card span-12">
+    <section className={compact ? "card" : "card span-12"}>
       <div className="card-head">
         <h2>Shoes</h2>
-        <span className="sub">distance logged in Garmin Connect{retired ? ` · ${retired} retired pair${retired > 1 ? "s" : ""} hidden` : ""}</span>
+        <span className="sub">{compact ? "logged in Garmin" : "distance logged in Garmin Connect"}{retired ? ` · ${retired} retired hidden` : ""}</span>
       </div>
       {!active.length ? (
         <div className="empty">No running shoes in Garmin Connect. Add them under Gear in the Garmin Connect app to track their mileage here.</div>
       ) : (
-        <div className="shoes">
+        <div className={compact ? "shoes compact" : "shoes"}>
           {active.map((s) => {
             const pct = (s.km / s.max_km) * 100;
             const state = pct >= 100 ? { c: "var(--bad)", t: "⛔ Past its mileage" } : pct >= 80 ? { c: "var(--warn)", t: "⚠ Replace soon" } : null;
@@ -174,7 +174,7 @@ export function FtpCard({ data, color }: { data: SportData; color: string }) {
   const hist = ftp?.history ?? [];
   const first = hist[0], latest = ftp?.latest;
   return (
-    <section className="card span-8">
+    <section className="card span-12">
       <div className="chart-title"><span>FTP and power-to-weight</span></div>
       <div className="chart-hint">Garmin's FTP estimate · watts per kilo use your nearest weigh-in</div>
       {!latest ? (
@@ -255,10 +255,10 @@ const CSS_PACES = [
 export function CssCard({ data, color }: { data: SportData; color: string }) {
   const css = data.css;
   return (
-    <section className="card span-12">
+    <section className="card">
       <div className="card-head">
         <h2>Critical swim speed</h2>
-        <span className="sub">from your fastest 200 m and 400 m intervals in this range · (T400 − T200) ÷ 2</span>
+        <span className="sub">(T400 − T200) ÷ 2</span>
       </div>
       {!css ? (
         <div className="empty">
@@ -267,7 +267,7 @@ export function CssCard({ data, color }: { data: SportData; color: string }) {
         </div>
       ) : (
         <div className="css">
-          <div>
+          <div className="css-head">
             <div className="tile">
               <div className="k">CSS pace</div>
               <div className="v tnum">{mmss(css.pace_s100)} <small>/100m</small></div>
@@ -288,7 +288,7 @@ export function CssCard({ data, color }: { data: SportData; color: string }) {
             ))}
           </div>
           <div>
-            <div className="chart-title"><span>CSS over time</span><span className="muted">8-week best, every 4 weeks · up = faster</span></div>
+            <div className="chart-title"><span>CSS over time</span><span className="muted">8-week best · up = faster</span></div>
             {css.history.length > 1 ? (
               <TrendChart points={css.history} color={color} format={mmss} invert lineOnly start={data.start} end={data.end} height={130} />
             ) : (

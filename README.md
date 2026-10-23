@@ -17,7 +17,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 - **Training readiness**: a 100-point score with a bar per component, plus alerts for illness, overreaching and sleep debt; see below.
 - **What predicts your good days**: for your steady runs and rides over the last 90 days, how the morning's sleep score, HRV, resting HR, Body Battery and recent training load relate to how well the session went (output per heartbeat against your normal). Sorted by strength of the link, with the difference between your best and worst third of mornings. It shows links, not proof of cause.
 - **Intensity balance (80/20)**: the weekly share of easy (Z1–2), moderate (Z3) and hard (Z4–5) heart-rate time across all sports for 12 weeks, against the 80% easy target.
-- **Sleep timing**: when you fell asleep and woke up over the last 14 nights, against the lights-out (21:00) and wake-up (05:00) times in `backend/routine.json`. It also shows your average drift, how consistent your bedtime is, and how many nights you made lights-out within 30 minutes.
+- **Sleep timing** (inside the Sleep card): when you fell asleep and woke up over the last 14 nights, against the lights-out (21:00) and wake-up (05:00) times in `backend/routine.json`. It also shows your average drift, how consistent your bedtime is, and how many nights you made lights-out within 30 minutes.
 
 **Today** tab:
 

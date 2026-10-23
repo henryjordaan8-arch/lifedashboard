@@ -6,7 +6,7 @@ import { ReadinessCard } from "./components/ReadinessCard";
 import { SportView } from "./components/SportView";
 import { TodayView } from "./components/TodayView";
 import { SleepCard } from "./components/SleepCard";
-import { SleepTimingCard } from "./components/SleepTimingCard";
+import { SleepTiming } from "./components/SleepTiming";
 import { TrendsRow } from "./components/TrendsRow";
 import { TrainingCalendar } from "./components/TrainingCalendar";
 import { UpcomingCard } from "./components/UpcomingCard";
@@ -56,7 +56,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
 
   const load = useCallback(async () => {
     try {
-      const [s, n, r, u] = await Promise.all([api.status(), api.sleep(30), api.readiness(), api.upcoming(14)]);
+      const [s, n, r, u] = await Promise.all([api.status(), api.sleep(91), api.readiness(), api.upcoming(14)]);
       setStatus(s);
       setNights(n.nights);
       setSleepTargets(n.targets ?? DEFAULT_TARGETS);
@@ -159,7 +159,9 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
       ) : (
         <main className="grid">
           <AlertsBar alerts={readiness?.alerts ?? []} />
-          <SleepCard nights={nights} />
+          <SleepCard nights={nights.slice(-30)}>
+            <SleepTiming nights={nights} targets={sleepTargets} />
+          </SleepCard>
           <ReadinessCard data={readiness} />
           <TrainingCalendar planned={upcoming.events} refreshKey={refreshKey} />
           <UpcomingCard
@@ -167,8 +169,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
             configured={upcoming.configured}
             onSetUp={APP ? () => setCalendarOpen(true) : undefined}
           />
-          <SleepTimingCard nights={nights} targets={sleepTargets} />
-          <TrendsRow refreshKey={refreshKey} />
+          <TrendsRow nights={nights} refreshKey={refreshKey} />
         </main>
       )}
       <footer className="app-foot">Life Dashboard · version {status?.version ?? "—"}</footer>

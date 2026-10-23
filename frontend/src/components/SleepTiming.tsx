@@ -6,7 +6,7 @@ import { useWidth } from "../useWidth";
 const NIGHTS = 14;
 const ON_TARGET_MIN = 30;
 const PAD = { top: 8, right: 16, bottom: 22, left: 64 };
-const ROW = 18;
+const ROW = 16;
 
 /** Minutes since noon, so a night (evening → morning) is one increasing range. */
 function sinceNoon(hhmm: string): number {
@@ -24,8 +24,8 @@ const sd = (xs: number[]) => {
   return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, xs.length - 1));
 };
 
-/** Lights-out and wake-up times of the last two weeks against the routine's targets. */
-export function SleepTimingCard({ nights, targets }: { nights: SleepNight[]; targets: SleepTargets }) {
+/** Lights-out and wake-up times of the last two weeks against the routine's targets (inside the Sleep card). */
+export function SleepTiming({ nights, targets }: { nights: SleepNight[]; targets: SleepTargets }) {
   const [ref, width] = useWidth<HTMLDivElement>(700);
   const [hover, setHover] = useState<number | null>(null);
   const rows = nights
@@ -34,14 +34,7 @@ export function SleepTimingCard({ nights, targets }: { nights: SleepNight[]; tar
     .map((n) => ({ n, bed: sinceNoon(n.start!.slice(11, 16)), wake: sinceNoon(n.end!.slice(11, 16)) }));
 
   const bedT = sinceNoon(targets.bed), wakeT = sinceNoon(targets.wake);
-  if (!rows.length) {
-    return (
-      <section className="card span-12">
-        <div className="card-head"><h2>Sleep timing</h2></div>
-        <div className="empty">No sleep times recorded yet.</div>
-      </section>
-    );
-  }
+  if (!rows.length) return null;
 
   const beds = rows.map((r) => r.bed), wakes = rows.map((r) => r.wake);
   const lo = Math.floor((Math.min(...beds, bedT) - 30) / 60) * 60;
@@ -57,12 +50,34 @@ export function SleepTimingCard({ nights, targets }: { nights: SleepNight[]; tar
   const h = hover != null ? rows[hover] : null;
 
   return (
-    <section className="card span-12">
-      <div className="card-head">
-        <h2>Sleep timing</h2>
-        <span className="sub">last {rows.length} nights vs your routine · lights out {targets.bed} · wake {targets.wake}</span>
+    <div className="sleep-timing">
+      <div className="chart-title">
+        <span>Sleep timing</span>
+        <span className="muted">last {rows.length} nights vs your routine · lights out {targets.bed} · wake {targets.wake}</span>
       </div>
       <div className="timing">
+        <div className="timing-stats">
+          <div className="tile">
+            <div className="k">Avg lights out</div>
+            <div className="v tnum">{clockOf(mean(beds))}</div>
+            <div className="d">{signed(bedDrift)} vs {targets.bed}</div>
+          </div>
+          <div className="tile">
+            <div className="k">Avg wake-up</div>
+            <div className="v tnum">{clockOf(mean(wakes))}</div>
+            <div className="d">{signed(wakeDrift)} vs {targets.wake}</div>
+          </div>
+          <div className="tile">
+            <div className="k">Bedtime spread</div>
+            <div className="v tnum">±{Math.round(sd(beds))} min</div>
+            <div className="d">night to night</div>
+          </div>
+          <div className="tile">
+            <div className="k">On target</div>
+            <div className="v tnum">{onTarget}/{rows.length}</div>
+            <div className="d">lights out ±{ON_TARGET_MIN} min</div>
+          </div>
+        </div>
         <div className="chart-wrap" ref={ref}>
           <svg width={width} height={H} role="img" aria-label="Sleep start and end per night against target times">
             {ticks.map((t) => (
@@ -103,29 +118,7 @@ export function SleepTimingCard({ nights, targets }: { nights: SleepNight[]; tar
             <span><i className="dash" /> routine targets</span>
           </div>
         </div>
-        <div className="timing-stats">
-          <div className="tile">
-            <div className="k">Avg lights out</div>
-            <div className="v tnum">{clockOf(mean(beds))}</div>
-            <div className="d">{signed(bedDrift)} vs {targets.bed}</div>
-          </div>
-          <div className="tile">
-            <div className="k">Avg wake-up</div>
-            <div className="v tnum">{clockOf(mean(wakes))}</div>
-            <div className="d">{signed(wakeDrift)} vs {targets.wake}</div>
-          </div>
-          <div className="tile">
-            <div className="k">Bedtime consistency</div>
-            <div className="v tnum">±{Math.round(sd(beds))} min</div>
-            <div className="d">night-to-night spread</div>
-          </div>
-          <div className="tile">
-            <div className="k">On target</div>
-            <div className="v tnum">{onTarget}/{rows.length}</div>
-            <div className="d">lights out within {ON_TARGET_MIN} min</div>
-          </div>
-        </div>
       </div>
-    </section>
+    </div>
   );
 }

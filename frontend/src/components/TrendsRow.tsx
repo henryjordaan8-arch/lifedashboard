@@ -9,14 +9,13 @@ const WEEKS = 12;
 const EASY_TARGET = 0.8;
 
 /** Dashboard row: what predicts your good days, and the 80/20 intensity balance. */
-export function TrendsRow({ refreshKey }: { refreshKey: number }) {
-  const [nights, setNights] = useState<SleepNight[]>([]);
+export function TrendsRow({ nights, refreshKey }: { nights: SleepNight[]; refreshKey: number }) {
   const [acts, setActs] = useState<Activity[]>([]);
   useEffect(() => {
     let live = true;
     const today = new Date();
-    Promise.all([api.sleep(91), api.activities(isoDay(addDays(today, -140)), isoDay(today))])
-      .then(([s, a]) => live && (setNights(s.nights), setActs(a)))
+    api.activities(isoDay(addDays(today, -140)), isoDay(today))
+      .then((a) => live && setActs(a))
       .catch(() => undefined);
     return () => {
       live = false;

@@ -299,7 +299,11 @@ svg .gridline { stroke: var(--grid); stroke-width: 1; }
 
 /* Upcoming list scrolls inside the card so the row height follows the calendar */
 .upcoming { display: flex; flex-direction: column; }
-.up-list { flex: 1 1 0; min-height: 240px; overflow-y: auto; contain: size; margin-right: -8px; padding-right: 8px; }
+.up-list {
+  flex: 1 1 0; min-height: 240px; overflow-y: auto; contain: size; margin-right: -8px; padding-right: 8px; padding-bottom: 28px;
+  /* fade the cut-off item so the list reads as scrollable, not clipped */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
 
 /* ---------- Tabs ---------- */
 .top { gap: 24px; }
@@ -445,10 +449,12 @@ code { font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-r
 .qbar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; }
 .table-wrap { overflow-x: auto; }
 table.sessions { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-table.sessions th { text-align: left; font-weight: 550; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--grid); padding: 0; white-space: nowrap; }
-table.sessions th button { all: unset; cursor: pointer; padding: 6px 8px; display: block; }
+table.sessions th { text-align: left; font-weight: 550; color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.02em; border-bottom: 1px solid var(--grid); padding: 0; white-space: nowrap; }
+table.sessions th button { all: unset; cursor: pointer; padding: 6px 6px; display: block; }
 table.sessions th.num button { text-align: right; }
-table.sessions td { padding: 7px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+table.sessions td { padding: 7px 6px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+/* long session names truncate (full name on hover) instead of pushing columns off the card */
+table.sessions td.name-cell { max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
 table.sessions td.num, table.sessions th.num { text-align: right; }
 table.sessions tbody tr:hover { background: var(--surface-2); }
 .key-star { margin-right: 5px; }
@@ -581,8 +587,11 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .app-foot { margin-top: 28px; text-align: center; font-size: 11px; color: var(--muted); }
 
 /* ---------- Sleep timing ---------- */
-.timing { display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start; }
-.timing-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sleep-timing { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--grid); }
+.timing { display: flex; flex-direction: column; gap: 14px; }
+.timing-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.timing-stats .tile { padding: 10px 12px; }
+.timing-stats .tile .v { font-size: 18px; }
 .timing-legend { display: flex; gap: 16px; font-size: 11px; margin-top: 4px; padding-left: 64px; }
 .timing-legend i { display: inline-block; vertical-align: middle; margin-right: 5px; }
 .timing-legend .bar { width: 14px; height: 8px; border-radius: 3px; background: var(--accent); }
@@ -591,6 +600,8 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 /* ---------- Sport extras ---------- */
 .mini-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 12px; }
 .mini-tiles.four { grid-template-columns: repeat(4, 1fr); }
+.mini-tiles.four .tile { padding: 9px 10px; }
+.mini-tiles.four .tile .v { font-size: 16px; }
 .mini-tiles .tile { padding: 10px 12px; min-width: 0; }
 .mini-tiles .tile .v { font-size: 18px; white-space: nowrap; }
 .mini-tiles .tile .d { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -599,8 +610,9 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .ramp-row > span:nth-child(3), .ramp-row > span:nth-child(4) { text-align: right; }
 .ramp-bar { height: 10px; background: var(--neutral); border-radius: 4px; overflow: hidden; }
 .ramp-bar i { display: block; height: 100%; border-radius: 4px; }
-.lt-row { display: flex; gap: 10px; align-items: baseline; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--grid); font-size: 13px; flex-wrap: wrap; }
-.lt-row .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-right: auto; }
+.lt-row { display: grid; grid-template-columns: auto auto 1fr; column-gap: 12px; row-gap: 2px; align-items: baseline; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--grid); font-size: 13px; white-space: nowrap; }
+.lt-row .k { grid-column: 1 / -1; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.lt-row > :last-child { text-align: right; }
 .shoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
 .shoe-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
 .shoe-head span { font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -608,13 +620,14 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .shoe-bar i { display: block; height: 100%; border-radius: 4px; }
 .two-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-width: 0; }
 .two-charts > div { min-width: 0; }
-.css { display: grid; grid-template-columns: 240px 1fr 1fr; gap: 24px; align-items: start; }
-.css-efforts { font-size: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.css { display: flex; flex-direction: column; gap: 14px; }
+.css-head { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.css-efforts { font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
 .css-efforts b { color: var(--ink); }
-.css-paces { display: grid; grid-template-columns: 1fr; gap: 8px; }
-.css-paces .tile { padding: 9px 12px; display: grid; grid-template-columns: 90px 1fr; align-items: baseline; column-gap: 10px; }
-.css-paces .tile .v { font-size: 16px; margin: 0; }
-.css-paces .tile .d { grid-column: 2; font-size: 11px; color: var(--ink-2); }
+.css-paces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.css-paces .tile { padding: 8px 10px; min-width: 0; }
+.css-paces .tile .v { font-size: 14px; white-space: nowrap; }
+.css-paces .tile .d { font-size: 10.5px; color: var(--ink-2); }
 
 /* ---------- Dashboard trends ---------- */
 .mini-tiles.three { grid-template-columns: repeat(3, 1fr); }
@@ -627,3 +640,9 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .dbar { position: relative; height: 10px; background: var(--neutral); border-radius: 4px; }
 .dbar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--baseline); }
 .dbar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+
+/* a 4-column side stack next to the sessions table, so short cards don't leave a tall gap */
+.stack { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.stack > .card { flex: 0 0 auto; }
+.stack > .card:last-child { flex: 1 1 auto; }
+.shoes.compact { grid-template-columns: 1fr; }

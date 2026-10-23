@@ -129,6 +129,14 @@ def _splits(detail: dict[str, Any], minutes: float, drift_pct: float) -> dict[st
     return {"lapDTOs": laps}
 
 
+def _te_label(name: str, quality: bool, rng: random.Random) -> str:
+    """Garmin's primary benefit; quality sessions mostly land where they were aimed."""
+    if not quality:
+        return "AEROBIC_BASE" if rng.random() < 0.85 else "TEMPO"
+    aim = "VO2MAX" if "vo2" in name.lower() else "LACTATE_THRESHOLD" if "sweet" in name.lower() else "TEMPO"
+    return aim if rng.random() < 0.8 else "TEMPO" if aim != "TEMPO" else "AEROBIC_BASE"
+
+
 def _swim_laps(detail: dict[str, Any], rng: random.Random) -> dict[str, Any]:
     """Warm-up, a main set of 200s or a 400 effort, cool-down; rests as zero-distance laps."""
     pace = 100 / detail["averageSpeed"]  # s/100m, session average
@@ -254,6 +262,7 @@ def seed(
                 "activityTrainingLoad": round(load, 1),
                 "aerobicTrainingEffect": round(rng.uniform(3.2, 4.2) if quality else rng.uniform(1.8, 3.2), 1),
                 "anaerobicTrainingEffect": round(rng.uniform(1.8, 3.2) if quality else rng.uniform(0.0, 1.0), 1),
+                "trainingEffectLabel": _te_label(name, quality, random.Random(act_id)),
                 **detail,
             })])
         fatigue = max(0.0, fatigue * 0.6 + load_today / 200)

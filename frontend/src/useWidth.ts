@@ -1,16 +1,19 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-/** Track an element's content width so SVG charts render at 1:1 pixels. */
+/**
+ * Track an element's content width so SVG charts render at 1:1 pixels.
+ * A callback ref, so it also measures elements that only appear once data has loaded.
+ */
 export function useWidth<T extends HTMLElement>(initial = 600) {
-  const ref = useRef<T>(null);
   const [width, setWidth] = useState(initial);
-  useLayoutEffect(() => {
-    const el = ref.current;
+  const observer = useRef<ResizeObserver | null>(null);
+  const ref = useCallback((el: T | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.floor(entry.contentRect.width)));
-    ro.observe(el);
     setWidth(Math.floor(el.getBoundingClientRect().width));
-    return () => ro.disconnect();
+    observer.current = new ResizeObserver(([entry]) => setWidth(Math.floor(entry.contentRect.width)));
+    observer.current.observe(el);
   }, []);
   return [ref, width] as const;
 }

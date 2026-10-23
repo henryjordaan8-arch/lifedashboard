@@ -58,6 +58,8 @@ export interface Activity {
   training_load: number | null;
   aerobic_te: number | null;
   anaerobic_te: number | null;
+  /** Garmin's primary benefit: AEROBIC_BASE, TEMPO, LACTATE_THRESHOLD, VO2MAX, ANAEROBIC_CAPACITY, … */
+  te_label?: string | null;
   // sport detail, when the watch records it
   moving_s?: number | null;
   avg_power?: number | null;

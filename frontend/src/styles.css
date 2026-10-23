@@ -15,6 +15,8 @@
 
   /* sports — categorical slots, fixed order (validated all-pairs) */
   --sport-run: #2a78d6;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
   --sport-ride: #eb6834;
   --sport-swim: #1baf7a;
   --sport-strength: #4a3aa7;
@@ -74,6 +76,8 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
     --accent: #3987e5;
     --sport-run: #3987e5;
+    --series-1: #3987e5;
+    --series-2: #d95926;
     --sport-ride: #d95926;
     --sport-swim: #199e70;
     --sport-strength: #5b4bc4;
@@ -113,6 +117,8 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
   --accent: #3987e5;
   --sport-run: #3987e5;
+  --series-1: #3987e5;
+  --series-2: #d95926;
   --sport-ride: #d95926;
   --sport-swim: #199e70;
   --sport-strength: #5b4bc4;
@@ -627,3 +633,14 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .dbar { position: relative; height: 10px; background: var(--neutral); border-radius: 4px; }
 .dbar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--baseline); }
 .dbar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+
+/* ---------- Fitness trend & session effectiveness ---------- */
+.fitness { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; }
+.fitness-tiles { display: flex; flex-direction: column; gap: 8px; }
+.fitness-tiles .tile .v { font-size: 20px; }
+.eff { display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; }
+.eff-table td { vertical-align: top; }
+.eff-sub { font-size: 11px; margin-top: 2px; }
+.prog { display: flex; flex-direction: column; }
+.prog-row { display: grid; grid-template-columns: 1fr 100px 120px; gap: 10px; padding: 8px 0; border-top: 1px solid var(--grid); font-size: 13px; }
+.prog-row > div:nth-child(2), .prog-row > div:nth-child(3) { text-align: right; }

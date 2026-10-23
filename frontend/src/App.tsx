@@ -8,6 +8,7 @@ import { TodayView } from "./components/TodayView";
 import { SleepCard } from "./components/SleepCard";
 import { SleepTimingCard } from "./components/SleepTimingCard";
 import { TrendsRow } from "./components/TrendsRow";
+import { FitnessCard } from "./components/FitnessCard";
 import { TrainingCalendar } from "./components/TrainingCalendar";
 import { UpcomingCard } from "./components/UpcomingCard";
 import { ago } from "./format";
@@ -168,6 +169,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
             onSetUp={APP ? () => setCalendarOpen(true) : undefined}
           />
           <SleepTimingCard nights={nights} targets={sleepTargets} />
+          <FitnessCard refreshKey={refreshKey} />
           <TrendsRow refreshKey={refreshKey} />
         </main>
       )}

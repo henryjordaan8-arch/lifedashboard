@@ -102,6 +102,13 @@ The first start installs everything, which takes a minute or two. After that it 
 - **Live server, about $5/month:** **[DEPLOY.md](DEPLOY.md)** covers Railway or any Docker host. Data is
   always up to date and **Sync now** works instantly.
 
+## Android app
+
+**[ANDROID.md](ANDROID.md)** covers the phone app. It has the Running, Cycling and Swimming
+dashboards for the last 12 months, signs in to Garmin directly and needs no computer. GitHub
+builds the APK automatically, and you install it from the repository's
+[android release](https://github.com/henryjordaan8-arch/lifedashboard/releases/tag/android).
+
 ## Connecting your accounts
 
 1. **Garmin**: run the login step above. It asks for your Garmin email, password and, if you use it, a two-factor code, then saves a login token in `~/.garminconnect`. Your password isn't stored. The first sync pulls 90 days of sleep and health data plus 5 years of activities, which takes 5–10 minutes; the dashboard fills in as it goes. After that it syncs every hour, or when you click **Sync now**.

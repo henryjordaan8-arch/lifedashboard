@@ -1,6 +1,9 @@
 import { isUnlocked, resume, STATIC, staticGet, unlock } from "./static";
 import type { Activity, CalEvent, DayPlan, Readiness, SleepNight, SportData, SportKey, Status, Week } from "./types";
 
+/** The Android app (`npm run build:app`): no backend, it talks to Garmin itself (src/mobile/). */
+export const APP = import.meta.env.VITE_APP === "1";
+
 /** Fired when the server says the login has expired, so the app can show the login screen. */
 export const AUTH_EVENT = "lifedashboard:login-required";
 
@@ -54,7 +57,8 @@ export const api = {
   upcoming: (days: number) =>
     get<{ configured: boolean; events: CalEvent[]; highlights?: CalEvent[] }>(`/api/upcoming?days=${days}`),
   readiness: () => get<Readiness>("/api/readiness"),
-  sport: (name: SportKey, days: number) => get<SportData>(`/api/sport/${name}?days=${days}`),
+  sport: async (name: SportKey, days: number): Promise<SportData> =>
+    APP ? (await import("./mobile/data")).sportData(name, days) : get<SportData>(`/api/sport/${name}?days=${days}`),
   day: (date: string) => get<DayPlan>(`/api/day?date=${date}`),
   events: (start: string, end: string, category?: string) =>
     get<{ events: CalEvent[] }>(`/api/events?start=${start}&end=${end}${category ? `&category=${category}` : ""}`).then(

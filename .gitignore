@@ -17,3 +17,5 @@ frontend/dist/
 
 # Encrypted snapshot is built by CI, never committed
 frontend/public/data.enc
+frontend/dist-app/
+frontend/android/

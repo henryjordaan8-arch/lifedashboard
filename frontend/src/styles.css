@@ -148,6 +148,10 @@ h1, h2, h3, p { margin: 0; }
 .ink2 { color: var(--ink-2); }
 
 .shell { max-width: 1440px; margin: 0 auto; padding: 32px 40px 56px; }
+/* Android app: the desktop layout scaled down to the phone's width; the sign-in screen stays full size. */
+.app body { min-width: 0; }
+.app .shell { min-width: 1200px; zoom: var(--app-zoom, 1); }
+.app .modal { max-height: calc((100vh - 64px) / var(--app-zoom, 1)); }
 
 /* ---------- Header ---------- */
 .top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }

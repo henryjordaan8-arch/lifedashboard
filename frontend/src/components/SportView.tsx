@@ -398,7 +398,8 @@ function WeekCard({ week, sessions, cfg }: { week: SportData["weekly"][number]; 
   );
 }
 
-export function SportView({ sport, refreshKey }: { sport: SportKey; refreshKey: number }) {
+export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; refreshKey: number; maxDays?: number }) {
+  const ranges = maxDays ? RANGES.filter((r) => r.days <= maxDays) : RANGES;
   const [expanded, setExpanded] = useState<string | null>(null);
   const close = useCallback(() => setExpanded(null), []);
   const cfg = CONFIG[sport];
@@ -417,7 +418,7 @@ export function SportView({ sport, refreshKey }: { sport: SportKey; refreshKey: 
     };
   }, [sport, days, refreshKey]);
 
-  const rangeLabel = RANGES.find((r) => r.days === days)?.label ?? `${days}d`;
+  const rangeLabel = ranges.find((r) => r.days === days)?.label ?? `${days}d`;
   const loaded = data && data.sport === sport ? data : null;
 
   return (
@@ -429,7 +430,7 @@ export function SportView({ sport, refreshKey }: { sport: SportKey; refreshKey: 
             {cfg.title}
           </h2>
           <div className="seg" role="tablist" aria-label="Date range">
-            {RANGES.map((r) => (
+            {ranges.map((r) => (
               <button key={r.label} className={days === r.days ? "on" : ""} onClick={() => setDays(r.days)}>
                 {r.label}
               </button>

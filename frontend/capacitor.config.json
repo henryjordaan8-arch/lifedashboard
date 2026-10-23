@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.henryjordaan8arch.lifedashboard",
+  "appName": "Life Dashboard",
+  "webDir": "dist-app",
+  "plugins": {
+    "CapacitorHttp": { "enabled": true },
+    "CapacitorCookies": { "enabled": true }
+  }
+}

@@ -1,0 +1,106 @@
+# Builds the Android app (Running / Cycling / Swimming, straight from Garmin) and
+# publishes the APK as the "android" release, so your phone can download it from
+# https://github.com/<you>/<repo>/releases/tag/android. See ANDROID.md.
+name: Android app
+
+on:
+  push:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/android.yml"
+      - "VERSION"
+  workflow_dispatch: # Actions tab → "Run workflow"
+
+permissions:
+  contents: write # to update the release
+
+concurrency:
+  group: android-app
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build the app's web files
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build:app
+
+      - name: Create the Android project
+        working-directory: frontend
+        run: |
+          npx cap add android
+          npx cap sync android
+          # Each build gets a higher version number, so Android installs it as an update.
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/; s/versionName \"[^\"]*\"/versionName \"$(cat ../VERSION)\"/" android/app/build.gradle
+
+      # Android only installs an update signed with the same key as the installed app.
+      # The first build creates a key and keeps it in the Actions cache for the next
+      # ones; an ANDROID_SIGNING_KEY secret (base64 keystore) takes precedence.
+      - name: Restore signing key
+        id: key
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-signing-key-v1
+
+      - name: Signing key
+        id: sign
+        env:
+          ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+        run: |
+          mkdir -p ~/.android
+          if [ -n "$ANDROID_SIGNING_KEY" ]; then
+            echo "$ANDROID_SIGNING_KEY" | base64 -d > ~/.android/debug.keystore
+          elif [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Life Dashboard"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Keep signing key
+        if: steps.sign.outputs.created == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-signing-key-v1
+
+      - name: Build APK
+        working-directory: frontend/android
+        run: |
+          ./gradlew --no-daemon assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/LifeDashboard.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LifeDashboard-apk
+          path: LifeDashboard.apk
+
+      - name: Publish to the "android" release
+        # Only the default branch publishes; other branches just keep the artifact above.
+        if: github.ref_name == github.event.repository.default_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view android >/dev/null 2>&1; then
+            gh release create android --title "Life Dashboard for Android" --target "$GITHUB_SHA" \
+              --notes "Open this page on your phone and tap LifeDashboard.apk to install. See ANDROID.md."
+          fi
+          gh release upload android LifeDashboard.apk --clobber
+          gh release edit android --notes "Version $(cat VERSION) · built $(date -u '+%Y-%m-%d %H:%M UTC') from ${GITHUB_SHA::7}. Open this page on your phone and tap LifeDashboard.apk to install. See ANDROID.md."

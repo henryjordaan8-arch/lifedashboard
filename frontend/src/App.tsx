@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { api } from "./api";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { api, APP } from "./api";
 import { STATIC } from "./static";
 import { AlertsBar } from "./components/AlertsBar";
 import { ReadinessCard } from "./components/ReadinessCard";
@@ -16,14 +16,18 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-const TABS = [
+const ALL_TABS = [
   { id: "dashboard", label: "Dashboard" },
   { id: "today", label: "Today" },
   { id: "run", label: "Running" },
   { id: "ride", label: "Cycling" },
   { id: "swim", label: "Swimming" },
 ] as const;
-type Tab = (typeof TABS)[number]["id"];
+type Tab = (typeof ALL_TABS)[number]["id"];
+// Android app only (keeps its calendar code out of the web builds).
+const CalendarSettings = lazy(() => import("./components/CalendarSettings").then((m) => ({ default: m.CalendarSettings })));
+// The Android app has no Today view (no routine or weekly goals on the phone).
+const TABS = APP ? ALL_TABS.filter((t) => t.id !== "today") : ALL_TABS;
 const tabFromHash = (): Tab => TABS.find((t) => `#/${t.id}` === window.location.hash)?.id ?? "dashboard";
 
 export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
@@ -42,6 +46,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
   });
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -115,6 +120,11 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
           >
             {status?.syncing ? "Syncing…" : STATIC ? "Refresh" : "Sync now"}
           </button>
+          {APP && (
+            <button className="btn ghost" onClick={() => setCalendarOpen(true)} title="Google Calendar links">
+              Calendar
+            </button>
+          )}
           {onSignOut && (
             <button className="btn ghost" onClick={onSignOut} title="Sign out">
               Sign out
@@ -123,6 +133,11 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
         </div>
       </header>
 
+      {calendarOpen && (
+        <Suspense fallback={null}>
+          <CalendarSettings onClose={() => (setCalendarOpen(false), load())} />
+        </Suspense>
+      )}
       {error && <div className="card" style={{ marginBottom: 20, color: "var(--bad)" }}>Can't reach the backend: {error}</div>}
       {status?.last_error && (
         <div className="card" style={{ marginBottom: 20, fontSize: 13 }}>
@@ -133,14 +148,18 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
       {tab === "today" ? (
         <TodayView refreshKey={refreshKey} />
       ) : tab === "run" || tab === "ride" || tab === "swim" ? (
-        <SportView sport={tab} refreshKey={refreshKey} />
+        <SportView sport={tab} refreshKey={refreshKey} maxDays={APP ? 365 : undefined} />
       ) : (
         <main className="grid">
           <AlertsBar alerts={readiness?.alerts ?? []} />
           <SleepCard nights={nights} />
           <ReadinessCard data={readiness} />
           <TrainingCalendar planned={upcoming.events} refreshKey={refreshKey} />
-          <UpcomingCard events={upcoming.highlights ?? []} configured={upcoming.configured} />
+          <UpcomingCard
+            events={upcoming.highlights ?? []}
+            configured={upcoming.configured}
+            onSetUp={APP ? () => setCalendarOpen(true) : undefined}
+          />
         </main>
       )}
       <footer className="app-foot">Life Dashboard · version {status?.version ?? "—"}</footer>

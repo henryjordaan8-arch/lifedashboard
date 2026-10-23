@@ -1,8 +1,10 @@
 # Life Dashboard for Android
 
-A phone app with the **Running**, **Cycling** and **Swimming** dashboards. It signs in to
-Garmin itself, so it needs no computer, server or GitHub sync, and it keeps the **last 12
-months** of activities on the phone.
+A phone app with the **Dashboard** (sleep, readiness score and alerts, training calendar,
+upcoming key sessions and calls) and the **Running**, **Cycling** and **Swimming** tabs. It
+signs in to Garmin itself, so it needs no computer, server or GitHub sync. It keeps the
+**last 12 months** of activities and the last 3 months of sleep and health data on the phone.
+There's no Today tab, because the daily routine and weekly goals live on your computer.
 
 The layout is the desktop layout, scaled to fit the screen. Turn the phone sideways for a
 bigger view, and tap a point or bar in a chart to see its details.
@@ -18,9 +20,14 @@ bigger view, and tap a point or bar in a chart to see its details.
 4. Open **Life Dashboard**, then sign in with your Garmin Connect email and password. If you use
    two-factor sign-in, enter the code Garmin sends you.
 
-The first sync downloads your last year of activities and VO₂ max, which takes about a minute.
-After that, the app syncs whenever you open it if the data is over an hour old, or when you tap
-**Sync now**.
+The first sync downloads a year of activities plus 3 months of sleep, HRV and daily stats,
+which takes a few minutes. The dashboard fills in when it's done. After that, the app syncs
+whenever you open it if the data is over an hour old, or when you tap **Sync now**.
+
+**Calendar (optional):** tap **Calendar** at the top and paste your Google Calendar's
+*Secret address in iCal format*, one per line. The steps are on that screen. This adds planned
+sessions to the training calendar and key sessions and calls to Upcoming. To put a whole
+calendar in one category, start its line with the category, for example `study: https://…`.
 
 ## Updates
 
@@ -45,7 +52,9 @@ and data are kept.
 
 - Your Garmin password goes only to Garmin and is never stored. The app keeps Garmin's login
   token and your activities in its own storage on the phone.
-- **Sign out** deletes both.
+- Your calendar addresses are also kept only on the phone.
+- **Sign out** deletes your Garmin login and data. The calendar addresses stay until you remove
+  them under **Calendar**.
 - The APK on the release page contains no data or login. It's the same app for anyone who
   downloads it.
 
@@ -57,6 +66,9 @@ and data are kept.
   mobile data.
 - Personal bests are taken from the 12 months on the phone, not your whole history. For the 1Y
   range, there's no previous year to compare against.
+- The readiness score uses the same formula as the desktop version, computed on the phone.
+  Custom keyword settings from `backend/.env` (such as `KEY_SESSION_KEYWORDS`) don't apply on
+  the phone, but ★ in a title still marks a key session.
 
 ## Build it yourself
 
@@ -75,4 +87,7 @@ The app's code is in `frontend/src/mobile/`:
 
 - `garmin.ts` handles sign-in and API calls.
 - `data.ts` syncs and stores the data on the phone.
-- `sport.ts` computes the dashboards, mirroring `backend/app/sport.py`.
+- `local.ts` answers the dashboard's `/api/...` requests in place of the backend.
+- `sport.ts`, `normalize.ts`, `readiness.ts` and `calendar.ts` mirror `backend/app/sport.py`,
+  `normalize.py`, `readiness.py` + `scoring.py` and `calendar_feed.py`. Change both sides
+  together.

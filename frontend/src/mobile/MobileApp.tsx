@@ -1,17 +1,8 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
-import { SportView } from "../components/SportView";
-import { ago } from "../format";
-import { clearData, hasData, HISTORY_DAYS, lastSync, sync } from "./data";
-import { isSignedIn, signIn, SignInNeeded, signOut, verifyCode } from "./garmin";
-
-const TABS = [
-  { id: "run", label: "Running" },
-  { id: "ride", label: "Cycling" },
-  { id: "swim", label: "Swimming" },
-] as const;
-type Tab = (typeof TABS)[number]["id"];
-const tabFromHash = (): Tab => TABS.find((t) => `#/${t.id}` === window.location.hash)?.id ?? "run";
-const SYNC_EVERY_MS = 60 * 60 * 1000;
+import { type FormEvent, useEffect, useState } from "react";
+import { AUTH_EVENT } from "../api";
+import { App } from "../App";
+import { clearData } from "./data";
+import { isSignedIn, signIn, signOut, verifyCode } from "./garmin";
 
 function GarminLogin({ onDone }: { onDone: () => void }) {
   const [email, setEmail] = useState("");
@@ -79,89 +70,24 @@ function GarminLogin({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** The Android app: the three sport dashboards, fed straight from Garmin. */
+/** The Android app: Garmin sign-in, then the dashboard fed from the phone (see local.ts). */
 export function MobileApp() {
   const [signedIn, setSignedIn] = useState(isSignedIn);
-  const [tab, setTab] = useState<Tab>(tabFromHash);
-  const [syncing, setSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    const on = () => setTab(tabFromHash());
-    window.addEventListener("hashchange", on);
-    return () => window.removeEventListener("hashchange", on);
+    const expired = () => setSignedIn(false);
+    window.addEventListener(AUTH_EVENT, expired);
+    return () => window.removeEventListener(AUTH_EVENT, expired);
   }, []);
-
-  const syncNow = useCallback(async () => {
-    setSyncing(true);
-    setError(null);
-    try {
-      await sync();
-    } catch (e) {
-      if (e instanceof SignInNeeded) setSignedIn(false);
-      else setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSyncing(false);
-      setRefreshKey((k) => k + 1);
-    }
-  }, []);
-
-  // Sync on opening the app (and when it comes back to the front) if the data is over an hour old.
-  useEffect(() => {
-    if (!signedIn) return;
-    const maybe = () => {
-      const last = lastSync();
-      if (!last || Date.now() - new Date(last).getTime() > SYNC_EVERY_MS) syncNow();
-    };
-    maybe();
-    const onVisible = () => document.visibilityState === "visible" && maybe();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [signedIn, syncNow]);
 
   if (!signedIn) return <GarminLogin onDone={() => setSignedIn(true)} />;
-
-  const leave = () => {
-    signOut();
-    clearData();
-    setSignedIn(false);
-  };
-
   return (
-    <div className="shell">
-      <header className="top">
-        <div>
-          <h1>Training</h1>
-          <div className="date">Your last 12 months on Garmin</div>
-        </div>
-        <nav className="tabs" aria-label="Views">
-          {TABS.map((t) => (
-            <a key={t.id} href={`#/${t.id}`} className={tab === t.id ? "on" : ""} aria-current={tab === t.id ? "page" : undefined}>
-              {t.label}
-            </a>
-          ))}
-        </nav>
-        <div className="sync">
-          <span className={error ? "pill err" : "pill"} title={error ?? undefined}>
-            <span className="dot" />
-            {error ? "Sync failed" : syncing ? "Syncing…" : `Garmin · synced ${ago(lastSync())}`}
-          </span>
-          <button className="btn" onClick={syncNow} disabled={syncing}>{syncing ? "Syncing…" : "Sync now"}</button>
-          <button className="btn ghost" onClick={leave} title="Sign out and remove your data from this phone">Sign out</button>
-        </div>
-      </header>
-
-      {error && (
-        <div className="card" style={{ marginBottom: 20, fontSize: 13 }}>
-          <b>Garmin sync error:</b> <span className="ink2">{error}</span>
-        </div>
-      )}
-      {!hasData() && syncing ? (
-        <div className="card empty">Downloading your last year of Garmin activities. This takes a minute the first time…</div>
-      ) : (
-        <SportView sport={tab} refreshKey={refreshKey} maxDays={HISTORY_DAYS} />
-      )}
-    </div>
+    <App
+      onSignOut={() => {
+        signOut();
+        clearData();
+        setSignedIn(false);
+      }}
+    />
   );
 }

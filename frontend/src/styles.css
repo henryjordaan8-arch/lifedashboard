@@ -150,7 +150,7 @@ h1, h2, h3, p { margin: 0; }
 .shell { max-width: 1440px; margin: 0 auto; padding: 32px 40px 56px; }
 /* Android app: the desktop layout scaled down to the phone's width; the sign-in screen stays full size. */
 .app body { min-width: 0; }
-.app .shell { min-width: 1200px; zoom: var(--app-zoom, 1); }
+.app .shell { min-width: 1360px; zoom: var(--app-zoom, 1); }
 .app .modal { max-height: calc((100vh - 64px) / var(--app-zoom, 1)); }
 
 /* ---------- Header ---------- */
@@ -464,6 +464,12 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
   background: var(--surface); color: var(--ink);
 }
 .login-card input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.settings-page { position: fixed; inset: 0; z-index: 70; background: var(--page); overflow: auto; }
+.settings-card { width: min(520px, 100%); }
+.settings-card textarea {
+  font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--baseline); background: var(--surface); color: var(--ink); resize: vertical;
+}
 .login-error { color: var(--bad); font-size: 13px; }
 .btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); margin-top: 6px; padding: 10px 14px; }
 .btn.primary:hover { opacity: 0.9; background: var(--ink); }

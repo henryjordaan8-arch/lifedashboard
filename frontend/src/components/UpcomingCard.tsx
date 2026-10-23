@@ -1,7 +1,12 @@
 import { CATEGORY_LABEL, clock, duration, parseDay, relativeDay, SPORT_LABEL } from "../format";
 import type { CalEvent } from "../types";
 
-export function UpcomingCard({ events, configured }: { events: CalEvent[]; configured: boolean }) {
+export function UpcomingCard({ events, configured, onSetUp }: {
+  events: CalEvent[];
+  configured: boolean;
+  /** The Android app sets up calendars in a dialog rather than backend/.env. */
+  onSetUp?: () => void;
+}) {
   const groups = new Map<string, CalEvent[]>();
   for (const e of events) {
     const d = e.start.slice(0, 10);
@@ -15,7 +20,12 @@ export function UpcomingCard({ events, configured }: { events: CalEvent[]; confi
         <h2>Upcoming</h2>
         <span className="sub">Key sessions &amp; calls · next 14 days</span>
       </div>
-      {!configured ? (
+      {!configured && onSetUp ? (
+        <div className="empty">
+          Add your Google Calendar to see key sessions and calls here.{" "}
+          <button className="btn" onClick={onSetUp}>Add calendar</button>
+        </div>
+      ) : !configured ? (
         <div className="empty">
           Add your calendar's secret iCal address as <code>GCAL_ICS_URLS</code> in <code>backend/.env</code>.
         </div>

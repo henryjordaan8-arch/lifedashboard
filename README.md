@@ -104,8 +104,9 @@ The first start installs everything, which takes a minute or two. After that it 
 
 ## Android app
 
-**[ANDROID.md](ANDROID.md)** covers the phone app. It has the Running, Cycling and Swimming
-dashboards for the last 12 months, signs in to Garmin directly and needs no computer. GitHub
+**[ANDROID.md](ANDROID.md)** covers the phone app. It has the Dashboard (sleep, readiness,
+training calendar, upcoming) and the Running, Cycling and Swimming tabs for the last 12
+months. It signs in to Garmin directly and needs no computer. GitHub
 builds the APK automatically, and you install it from the repository's
 [android release](https://github.com/henryjordaan8-arch/lifedashboard/releases/tag/android).
 

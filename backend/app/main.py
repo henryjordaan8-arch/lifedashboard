@@ -331,7 +331,13 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
             ftp = [x for d, raw in store.get_daily("ftp", *everything).items() if (x := normalize.cycling_ftp(d, raw))]
             weight = [w for raw in store.get_daily("weight", *everything).values() for w in normalize.weights(raw)]
             return {"ftp": ftp, "weight": weight}
-        return {}
+        efforts = []  # swim: best 200 m / 400 m per session, from lap splits
+        for a in activities_between("0000-01-01", date.today().isoformat()):
+            if a["sport"] == "swim" and (raw := store.get_one("splits", str(a["id"]))):
+                e = normalize.swim_efforts(raw)
+                if e["t200"] or e["t400"]:
+                    efforts.append({"id": a["id"], "date": a["date"], "name": a["name"], **e})
+        return {"swim_efforts": efforts}
 
     @app.get("/api/readiness")
     def readiness_inputs() -> dict[str, Any]:

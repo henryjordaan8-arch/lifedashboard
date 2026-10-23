@@ -15,6 +15,8 @@ A personal desktop dashboard for Garmin data, training, work and study.
 - **Training calendar**: a month grid of Garmin activities, planned training and study sessions from your calendar. Each entry is an emoji (🏋️ gym, 🏃 run, 🚴 ride, 🏊 swim, 📚 study) and one word from its title. Done entries are solid colour; planned ones are a lighter tint of the same colour with a dashed outline. Click any entry for its details below the calendar.
 - **Upcoming**: the next 14 days of **key training sessions** (★) and **calls** (☎: any calendar event with "call" in the title; change the word with `CALL_KEYWORDS`).
 - **Training readiness**: a 100-point score with a bar per component, plus alerts for illness, overreaching and sleep debt; see below.
+- **What predicts your good days**: for your steady runs and rides over the last 90 days, how the morning's sleep score, HRV, resting HR, Body Battery and recent training load relate to how well the session went (output per heartbeat against your normal). Sorted by strength of the link, with the difference between your best and worst third of mornings. It shows links, not proof of cause.
+- **Intensity balance (80/20)**: the weekly share of easy (Z1–2), moderate (Z3) and hard (Z4–5) heart-rate time across all sports for 12 weeks, against the 80% easy target.
 - **Sleep timing**: when you fell asleep and woke up over the last 14 nights, against the lights-out (21:00) and wake-up (05:00) times in `backend/routine.json`. It also shows your average drift, how consistent your bedtime is, and how many nights you made lights-out within 30 minutes.
 
 **Today** tab:
@@ -39,6 +41,8 @@ A personal desktop dashboard for Garmin data, training, work and study.
     - *Weekly mileage ramp*: flags week-on-week jumps over 10%.
     - *Race predictions* and *lactate threshold* from Garmin.
     - *Shoes*: distance per pair against its replacement mileage (700 km if you haven't set one in Garmin).
+  - **Swimming**
+    - *Critical swim speed (CSS)*: from your fastest 200 m and 400 m intervals in the range, (T400 − T200) ÷ 2, with endurance, threshold and speed paces and a trend. Pause your watch between intervals so each one is recorded as its own lap.
   - **Cycling**
     - *Power zones*: Garmin's 7 zones, with Z5–7 grouped.
     - *FTP and W/kg*: uses your nearest weigh-in, so log your weight in Garmin to get W/kg.

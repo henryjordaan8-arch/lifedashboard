@@ -332,6 +332,26 @@ def vo2max(day: str, raw: Any) -> dict[str, Any] | None:
     return {"date": day, "run": run, "ride": ride}
 
 
+# Pool intervals that count as a 200 m / 400 m effort (longer ones are scaled down to it).
+SWIM_EFFORTS = {"t200": (200, 300), "t400": (400, 600)}
+
+
+def swim_efforts(raw: Any) -> dict[str, float | None]:
+    """Fastest 200 m and 400 m from a swim's intervals (Garmin laps between rests), in seconds."""
+    laps = (raw or {}).get("lapDTOs") if isinstance(raw, dict) else None
+    out: dict[str, float | None] = {k: None for k in SWIM_EFFORTS}
+    for lap in laps or []:
+        dist = _num(lap.get("distance"))
+        secs = _num(lap.get("movingDuration")) or _num(lap.get("duration"))
+        if not dist or not secs:
+            continue
+        for key, (lo, hi) in SWIM_EFFORTS.items():
+            if lo <= dist <= hi:
+                t = round(secs * lo / dist, 1)
+                out[key] = t if out[key] is None else min(out[key], t)
+    return out
+
+
 def decoupling(raw: Any, sport: str) -> float | None:
     """Aerobic decoupling (%) from an activity's lap splits.
 

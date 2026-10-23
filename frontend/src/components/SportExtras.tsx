@@ -243,3 +243,70 @@ function Change({ now, then, unit = "", digits = 0 }: { now: number; then: numbe
     </span>
   );
 }
+
+// Training paces from CSS (seconds per 100 m added to it), after Swim Smooth's CSS zones.
+const CSS_PACES = [
+  { label: "Endurance", add: [6, 10], note: "long aerobic sets" },
+  { label: "Threshold", add: [-1, 2], note: "CSS sets, short rest" },
+  { label: "Speed", add: [-6, -3], note: "short, fast repeats" },
+];
+
+/** Critical swim speed: the pace you could hold for ~30 min, from your best 200 m and 400 m. */
+export function CssCard({ data, color }: { data: SportData; color: string }) {
+  const css = data.css;
+  return (
+    <section className="card span-12">
+      <div className="card-head">
+        <h2>Critical swim speed</h2>
+        <span className="sub">from your fastest 200 m and 400 m intervals in this range · (T400 − T200) ÷ 2</span>
+      </div>
+      {!css ? (
+        <div className="empty">
+          Needs a 200 m and a 400 m swum as single intervals (pause your watch between them) in this range. A 400 time
+          trial and a 200 time trial in one session is the classic way.
+        </div>
+      ) : (
+        <div className="css">
+          <div>
+            <div className="tile">
+              <div className="k">CSS pace</div>
+              <div className="v tnum">{mmss(css.pace_s100)} <small>/100m</small></div>
+              <div className="d">{css.history.length > 1 ? <CssChange history={css.history} /> : " "}</div>
+            </div>
+            <div className="css-efforts muted">
+              <div>Best 200 m <b className="tnum">{mmss(css.t200.value)}</b> · {shortDate(css.t200.date)}</div>
+              <div>Best 400 m <b className="tnum">{mmss(css.t400.value)}</b> · {shortDate(css.t400.date)}</div>
+            </div>
+          </div>
+          <div className="css-paces">
+            {CSS_PACES.map((p) => (
+              <div className="tile" key={p.label}>
+                <div className="k">{p.label}</div>
+                <div className="v tnum">{mmss(css.pace_s100 + p.add[0])}–{mmss(css.pace_s100 + p.add[1])}</div>
+                <div className="d">{p.note}</div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="chart-title"><span>CSS over time</span><span className="muted">8-week best, every 4 weeks · up = faster</span></div>
+            {css.history.length > 1 ? (
+              <TrendChart points={css.history} color={color} format={mmss} invert lineOnly start={data.start} end={data.end} height={130} />
+            ) : (
+              <div className="empty">Pick a longer range to see the trend.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CssChange({ history }: { history: { value: number }[] }) {
+  const d = history[history.length - 1].value - history[0].value;
+  if (Math.abs(d) < 0.5) return <span className="ink2">≈ unchanged in range</span>;
+  return (
+    <span style={{ color: d < 0 ? "var(--good)" : "var(--bad)" }}>
+      {d < 0 ? "▲ −" : "▼ +"}{Math.abs(d).toFixed(1)} s in range
+    </span>
+  );
+}

@@ -58,6 +58,11 @@ export interface Activity {
   training_load: number | null;
   aerobic_te: number | null;
   anaerobic_te: number | null;
+  // sport detail, when the watch records it
+  moving_s?: number | null;
+  avg_power?: number | null;
+  norm_power?: number | null;
+  hr_zones_s?: number[] | null;
 }
 
 export interface CalEvent {
@@ -280,6 +285,13 @@ export interface SportData {
   // cycling: Z1–Z4 and Z5–7 (power zones folded into five bands)
   power_zones_s?: number[] | null;
   ftp?: { latest: FtpReading | null; history: FtpReading[]; weight_kg: number | null };
+  // swimming: critical swim speed from the best 200 m and 400 m in the range
+  css?: {
+    pace_s100: number;
+    t200: { value: number; date: string; name: string };
+    t400: { value: number; date: string; name: string };
+    history: { date: string; value: number }[];
+  } | null;
 }
 
 /** Wake-up and lights-out times from the daily routine ("05:00", "21:00"). */

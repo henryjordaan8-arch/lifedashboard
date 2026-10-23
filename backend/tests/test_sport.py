@@ -77,3 +77,16 @@ def test_run_and_ride_extras():
     assert b["power_zones_s"] == [60, 120, 60, 30, 10]
     assert b["ftp"]["latest"] == {"date": "2026-09-20", "ftp": 262, "wkg": round(262 / 74.0, 2)}
     assert b["ftp"]["history"][0] == {"date": "2026-09-01", "ftp": 250, "wkg": round(250 / 75.0, 2)}
+
+
+def test_css_from_best_200_and_400():
+    efforts = [
+        {"id": 1, "date": "2026-09-03", "name": "Swim", "t200": 190.0, "t400": None},
+        {"id": 2, "date": "2026-09-10", "name": "Swim", "t200": 186.0, "t400": 400.0},
+        {"id": 3, "date": "2026-09-17", "name": "Swim", "t200": None, "t400": 392.0},
+    ]
+    css = sport.swim_extras(efforts, date(2026, 9, 1), date(2026, 9, 30))["css"]
+    assert css["pace_s100"] == (392 - 186) / 2  # 1:43 /100m
+    assert css["t200"]["date"] == "2026-09-10" and css["t400"]["date"] == "2026-09-17"
+    assert css["history"][-1] == {"date": "2026-09-30", "value": 103.0}
+    assert sport.swim_extras(efforts[:1], date(2026, 9, 1), date(2026, 9, 30))["css"] is None

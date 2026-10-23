@@ -28,6 +28,7 @@ DAYS_BACK, DAYS_AHEAD = 30, 21
 FIXED = [
     "/api/status",
     "/api/sleep?days=30",
+    "/api/sleep?days=91",
     "/api/readiness",
     "/api/upcoming?days=14",
     "/api/key-sessions?days=21",

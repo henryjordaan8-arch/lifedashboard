@@ -91,3 +91,10 @@ def test_extras_normalisers():
         {"a": {"totalDistance": 512300, "totalActivities": 50}})
     assert shoes == [{"id": "a", "name": "Trainer", "km": 512.3, "max_km": 700, "max_set": False,
                       "activities": 50, "since": None, "retired": False}]
+
+
+def test_swim_efforts_from_intervals():
+    raw = {"lapDTOs": [{"distance": 400, "movingDuration": 420}, {"distance": 0, "duration": 30},
+                       {"distance": 200, "movingDuration": 190}, {"distance": 300, "movingDuration": 300},
+                       {"distance": 100, "movingDuration": 85}]}
+    assert normalize.swim_efforts(raw) == {"t200": 190.0, "t400": 420.0}  # 300 m at 1:40 → 200.0, slower

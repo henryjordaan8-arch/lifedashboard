@@ -13,6 +13,7 @@ import { addDaysIso, type Extras, normalizeActivity, normalizeVo2, sportView } f
 export const HISTORY_DAYS = 365;
 const DAILY_DAYS = 91; // readiness baselines need ~2 months of nights
 const SPLITS_DAYS = 60;
+const SWIM_SPLITS_DAYS = 365; // best 200 m / 400 m for CSS
 const RECENT_DAYS = 2; // re-fetched every sync: Garmin keeps revising them
 const PAGE = 100;
 const VO2_CHUNK_DAYS = 31;
@@ -26,14 +27,15 @@ interface Cache {
   vo2: { date: string; run: number | null; ride: number | null }[];
   daily: Record<string, Daily>;
   decoupling: Record<string, number | null>; // activity id -> %, null when splits had none
-  extras: Required<Extras>; // race predictions, threshold, shoes, FTP, weight
+  swims: Record<string, { t200: number | null; t400: number | null }>; // swim id -> best 200 m / 400 m
+  extras: Required<Omit<Extras, "swim_efforts">>; // race predictions, threshold, shoes, FTP, weight
   syncedUntil: string | null;
   syncedFrom: string | null;
   lastSync: string | null; // ISO timestamp
 }
 
 const empty = (): Cache => ({
-  activities: [], vo2: [], daily: {}, decoupling: {}, syncedUntil: null, syncedFrom: null, lastSync: null,
+  activities: [], vo2: [], daily: {}, decoupling: {}, swims: {}, syncedUntil: null, syncedFrom: null, lastSync: null,
   extras: { predictions: [], threshold: [], shoes: [], ftp: [], weight: [] },
 });
 
@@ -227,6 +229,19 @@ async function doSync(): Promise<void> {
     }
   });
 
+  // Swim intervals → best 200 m / 400 m, once per swim.
+  const swims: Cache["swims"] = {};
+  const swimsFrom = addDaysIso(end, -SWIM_SPLITS_DAYS);
+  const swimList = activities.filter((a) => a.sport === "swim" && a.date >= swimsFrom);
+  for (const a of swimList) if (String(a.id) in cache.swims) swims[a.id] = cache.swims[a.id];
+  await pool(swimList.filter((a) => !(String(a.id) in swims)), async (a) => {
+    try {
+      swims[a.id] = normalize.swimEfforts(await garminGet(`/activity-service/activity/${a.id}/splits`));
+    } catch {
+      /* try again next sync */
+    }
+  });
+
   // Race predictions / weight: the year on first sync, then the last few days.
   const extrasFrom = cache.syncedUntil ? addDaysIso(cache.syncedUntil, -RECENT_DAYS) : want;
   const extras = await fetchExtras(extrasFrom < want ? want : extrasFrom, end, want);
@@ -237,6 +252,7 @@ async function doSync(): Promise<void> {
     vo2: [...vo2ByDate.values()].filter((v) => v.date >= want).sort((a, b) => (a.date < b.date ? -1 : 1)),
     daily,
     decoupling,
+    swims,
     syncedUntil: end,
     syncedFrom: want,
     lastSync: new Date().toISOString(),
@@ -263,5 +279,8 @@ export function sportData(sport: SportKey, days: number): SportData {
     sport === "swim"
       ? []
       : cache.vo2.filter((v) => v[sport] != null).map((v) => ({ date: v.date, value: v[sport] as number }));
-  return sportView(sport, cache.activities, vo2, start, end, cache.extras);
+  const swimEfforts = cache.activities
+    .filter((a) => a.sport === "swim" && (cache.swims[a.id]?.t200 || cache.swims[a.id]?.t400))
+    .map((a) => ({ id: a.id, date: a.date, name: a.name, ...cache.swims[a.id] }));
+  return sportView(sport, cache.activities, vo2, start, end, { ...cache.extras, swim_efforts: swimEfforts });
 }

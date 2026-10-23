@@ -199,3 +199,23 @@ export function shoes(gear: unknown, stats: Record<string, Raw>) {
     })
     .sort((a, b) => Number(a.retired) - Number(b.retired) || b.km - a.km);
 }
+
+// Pool intervals that count as a 200 m / 400 m effort (longer ones are scaled down to it).
+const SWIM_EFFORTS = { t200: [200, 300], t400: [400, 600] } as const;
+
+/** Fastest 200 m and 400 m from a swim's intervals (Garmin laps between rests), in seconds. */
+export function swimEfforts(raw: Raw | null): { t200: number | null; t400: number | null } {
+  const out: { t200: number | null; t400: number | null } = { t200: null, t400: null };
+  for (const lap of (raw?.lapDTOs as Raw[] | undefined) ?? []) {
+    const dist = num(lap.distance), secs = num(lap.movingDuration) || num(lap.duration);
+    if (!dist || !secs) continue;
+    for (const key of ["t200", "t400"] as const) {
+      const [lo, hi] = SWIM_EFFORTS[key];
+      if (lo <= dist && dist <= hi) {
+        const t = Math.round(((secs * lo) / dist) * 10) / 10;
+        out[key] = out[key] == null ? t : Math.min(out[key]!, t);
+      }
+    }
+  }
+  return out;
+}

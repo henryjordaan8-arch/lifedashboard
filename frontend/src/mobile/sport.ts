@@ -323,6 +323,35 @@ export interface Extras {
   shoes?: Shoe[];
   ftp?: { date: string; ftp: number }[];
   weight?: { date: string; kg: number }[];
+  swim_efforts?: SwimEffort[];
+}
+
+export interface SwimEffort { id: number; date: string; name: string; t200: number | null; t400: number | null }
+
+const CSS_WINDOW_DAYS = 56;
+
+/** Critical swim speed from the best 200 m and 400 m (see _css in sport.py). */
+function css(efforts: SwimEffort[]) {
+  const best = (k: "t200" | "t400") =>
+    efforts.filter((e) => e[k]).reduce<SwimEffort | null>((b, e) => (!b || e[k]! < b[k]! ? e : b), null);
+  const b200 = best("t200"), b400 = best("t400");
+  if (!b200 || !b400 || !(b200.t200! < b400.t400! && b400.t400! <= 3 * b200.t200!)) return null;
+  return {
+    pace_s100: round((b400.t400! - b200.t200!) / 2, 1),
+    t200: { value: b200.t200!, date: b200.date, name: b200.name },
+    t400: { value: b400.t400!, date: b400.date, name: b400.name },
+  };
+}
+
+function swimExtras(efforts: SwimEffort[], start: string, end: string) {
+  const history: { date: string; value: number }[] = [];
+  for (let d = end; d >= start; d = addDaysIso(d, -28)) {
+    const from = addDaysIso(d, -CSS_WINDOW_DAYS);
+    const est = css(efforts.filter((e) => from < e.date && e.date <= d));
+    if (est) history.push({ date: d, value: est.pace_s100 });
+  }
+  const current = css(efforts.filter((e) => start <= e.date && e.date <= end));
+  return { css: current ? { ...current, history: history.reverse() } : null };
 }
 
 const inRange = <T extends { date: string }>(rows: T[], start: string, end: string) => rows.filter((r) => start <= r.date && r.date <= end);
@@ -394,5 +423,5 @@ export function sportView(
   };
   if (sport === "run") return { ...out, ...runExtras(extras, start, end) };
   if (sport === "ride") return { ...out, power_zones_s: zones(period, "power_zones_s"), ...rideExtras(extras, start, end) };
-  return out;
+  return { ...out, ...swimExtras(extras.swim_efforts ?? [], start, end) };
 }

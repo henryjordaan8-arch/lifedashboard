@@ -3,7 +3,7 @@ import { api } from "../api";
 import { addDays, duration, mmss, parseDay, shortDate, SPORT_LABEL } from "../format";
 import type { SportBest, SportData, SportKey, SportSession, SportSummary } from "../types";
 import { ChartModal, ExpandButton } from "./ChartModal";
-import { FtpCard, PredictionsCard, RampCard, ShoesCard } from "./SportExtras";
+import { CssCard, FtpCard, PredictionsCard, RampCard, ShoesCard } from "./SportExtras";
 import { TrendChart, type TrendPoint } from "./TrendChart";
 import { WeeklyVolumeChart } from "./WeeklyVolumeChart";
 
@@ -534,6 +534,7 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
               <FtpCard data={loaded} color={cfg.color} />
             </>
           )}
+          {sport === "swim" && <CssCard data={loaded} color={cfg.color} />}
 
           <section className="card span-8">
             <div className="card-head">

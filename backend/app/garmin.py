@@ -21,8 +21,10 @@ log = logging.getLogger(__name__)
 REFRESH_RECENT_DAYS = 2
 # Small pause between requests so a backfill doesn't trip Garmin's rate limiting.
 REQUEST_PAUSE_S = 0.4
-# Lap splits (for aerobic decoupling) are fetched per activity, only for recent runs/rides.
+# Lap splits are fetched per activity: recent runs/rides (aerobic decoupling) and a
+# year of swims (best 200 m / 400 m efforts for CSS; swims are few, so it's cheap).
 SPLITS_DAYS = 60
+SWIM_SPLITS_DAYS = 365
 
 
 class GarminNotConfigured(RuntimeError):
@@ -164,14 +166,16 @@ def sync(
     oldest_have = date.fromisoformat(have_from) if have_from else today
     store.set_meta("activities_synced_from", min(want_from, oldest_have).isoformat())
 
-    # Lap splits for recent runs and rides (stored under kind "splits", keyed by activity id).
+    # Lap splits (stored under kind "splits", keyed by activity id).
     from .normalize import activity as normalize_activity
 
     counts["splits"] = 0
     since_splits = (today - timedelta(days=SPLITS_DAYS)).isoformat()
-    for raw in store.get_activities(since_splits, today.isoformat()):
+    since_swims = (today - timedelta(days=SWIM_SPLITS_DAYS)).isoformat()
+    for raw in store.get_activities(since_swims, today.isoformat()):
         a = normalize_activity(raw)
-        if not a or a["sport"] not in ("run", "ride") or store.has_daily("splits", str(a["id"])):
+        wanted = a and (a["sport"] == "swim" or (a["sport"] in ("run", "ride") and a["date"] >= since_splits))
+        if not wanted or store.has_daily("splits", str(a["id"])):
             continue
         try:
             payload = client.get_activity_splits(str(a["id"]))

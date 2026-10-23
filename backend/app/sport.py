@@ -205,6 +205,35 @@ def ride_extras(extras: dict[str, Any], start: date, end: date) -> dict[str, Any
                     "weight_kg": _latest(weights)["kg"] if weights else None}}
 
 
+CSS_WINDOW_DAYS = 56  # best 200 m and 400 m within this many days make one CSS estimate
+
+
+def _css(efforts: list[dict]) -> dict[str, Any] | None:
+    """Critical swim speed from the best 200 m and 400 m: pace per 100 m = (T400 − T200) / 2."""
+    b200 = min((e for e in efforts if e.get("t200")), key=lambda e: e["t200"], default=None)
+    b400 = min((e for e in efforts if e.get("t400")), key=lambda e: e["t400"], default=None)
+    if not b200 or not b400 or not (b200["t200"] < b400["t400"] <= 3 * b200["t200"]):
+        return None
+    pace = (b400["t400"] - b200["t200"]) / 2
+    return {"pace_s100": round(pace, 1),
+            "t200": {"value": b200["t200"], "date": b200["date"], "name": b200["name"]},
+            "t400": {"value": b400["t400"], "date": b400["date"], "name": b400["name"]}}
+
+
+def swim_extras(efforts: list[dict], start: date, end: date) -> dict[str, Any]:
+    """CSS for the range, plus how it moved: an estimate every 4 weeks from the 8 weeks before it."""
+    in_range = [e for e in efforts if start.isoformat() <= e["date"] <= end.isoformat()]
+    history = []
+    d = end
+    while d >= start:
+        window = [e for e in efforts if (d - timedelta(days=CSS_WINDOW_DAYS)).isoformat() < e["date"] <= d.isoformat()]
+        if est := _css(window):
+            history.append({"date": d.isoformat(), "value": est["pace_s100"]})
+        d -= timedelta(days=28)
+    current = _css(in_range)
+    return {"css": {**current, "history": history[::-1]} if current else None}
+
+
 def _change(points: list[dict], group: str) -> dict[str, Any] | None:
     """Mean of the first 4 weeks vs the last 4 weeks of the range."""
     if len(points) < 2:
@@ -299,4 +328,6 @@ def sport_view(
     elif sport == "ride":
         out["power_zones_s"] = zones(period, "power_zones_s")
         out |= ride_extras(extras or {}, start, end)
+    elif sport == "swim":
+        out |= swim_extras((extras or {}).get("swim_efforts") or [], start, end)
     return out

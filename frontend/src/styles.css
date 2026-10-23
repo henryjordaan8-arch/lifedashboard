@@ -389,6 +389,7 @@ code { font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-r
 .recent-row .ld { text-align: right; color: var(--ink-2); }
 
 .span-12 { grid-column: span 12; min-width: 0; }
+.span-6 { grid-column: span 6; min-width: 0; }
 .tiles.four .v { font-size: 19px; white-space: nowrap; }
 .goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); column-gap: 28px; }
 .goals .goal:first-child { border-top: 1px solid var(--grid); }
@@ -607,3 +608,22 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .shoe-bar i { display: block; height: 100%; border-radius: 4px; }
 .two-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-width: 0; }
 .two-charts > div { min-width: 0; }
+.css { display: grid; grid-template-columns: 240px 1fr 1fr; gap: 24px; align-items: start; }
+.css-efforts { font-size: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.css-efforts b { color: var(--ink); }
+.css-paces { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.css-paces .tile { padding: 9px 12px; display: grid; grid-template-columns: 90px 1fr; align-items: baseline; column-gap: 10px; }
+.css-paces .tile .v { font-size: 16px; margin: 0; }
+.css-paces .tile .d { grid-column: 2; font-size: 11px; color: var(--ink-2); }
+
+/* ---------- Dashboard trends ---------- */
+.mini-tiles.three { grid-template-columns: repeat(3, 1fr); }
+.insight-lead { font-size: 13px; margin: 2px 0 12px; color: var(--ink); line-height: 1.45; }
+.factors { display: flex; flex-direction: column; }
+.factor { display: grid; grid-template-columns: 1.4fr 1fr 110px 92px; gap: 12px; align-items: center; font-size: 12.5px; padding: 7px 0; border-top: 1px solid var(--grid); }
+.factor.head { font-size: 11px; border-top: none; padding-top: 0; }
+.factor > span:nth-child(3), .factor > span:nth-child(4) { text-align: right; }
+.axis-lbl { display: flex; justify-content: space-between; }
+.dbar { position: relative; height: 10px; background: var(--neutral); border-radius: 4px; }
+.dbar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--baseline); }
+.dbar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; }

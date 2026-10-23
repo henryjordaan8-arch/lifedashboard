@@ -7,6 +7,7 @@ import { SportView } from "./components/SportView";
 import { TodayView } from "./components/TodayView";
 import { SleepCard } from "./components/SleepCard";
 import { SleepTimingCard } from "./components/SleepTimingCard";
+import { TrendsRow } from "./components/TrendsRow";
 import { TrainingCalendar } from "./components/TrainingCalendar";
 import { UpcomingCard } from "./components/UpcomingCard";
 import { ago } from "./format";
@@ -167,6 +168,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
             onSetUp={APP ? () => setCalendarOpen(true) : undefined}
           />
           <SleepTimingCard nights={nights} targets={sleepTargets} />
+          <TrendsRow refreshKey={refreshKey} />
         </main>
       )}
       <footer className="app-foot">Life Dashboard · version {status?.version ?? "—"}</footer>

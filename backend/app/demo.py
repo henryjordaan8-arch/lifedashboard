@@ -129,6 +129,21 @@ def _splits(detail: dict[str, Any], minutes: float, drift_pct: float) -> dict[st
     return {"lapDTOs": laps}
 
 
+def _swim_laps(detail: dict[str, Any], rng: random.Random) -> dict[str, Any]:
+    """Warm-up, a main set of 200s or a 400 effort, cool-down; rests as zero-distance laps."""
+    pace = 100 / detail["averageSpeed"]  # s/100m, session average
+    laps = [{"distance": 400, "movingDuration": 4 * pace * 1.06, "duration": 4 * pace * 1.06}]
+    if rng.random() < 0.5:
+        for _ in range(4):
+            t = 2 * pace * rng.uniform(0.9, 0.95)
+            laps += [{"distance": 200, "movingDuration": t, "duration": t}, {"distance": 0, "duration": 30}]
+    else:
+        t = 4 * pace * rng.uniform(0.93, 0.96)
+        laps += [{"distance": 400, "movingDuration": t, "duration": t}, {"distance": 0, "duration": 60}]
+    laps.append({"distance": 200, "movingDuration": 2 * pace * 1.1, "duration": 2 * pace * 1.1})
+    return {"lapDTOs": laps}
+
+
 def seed(
     store: Store, days: int, today: date | None = None, rng_seed: int = 7, activity_days: int = 365
 ) -> None:
@@ -222,6 +237,8 @@ def seed(
             load_today += load
             quality = any(w in name.lower() for w in ("vo2", "tempo", "sweet spot"))
             detail = _detail(type_key, name, minutes, fit, rng)
+            if type_key == "lap_swimming":
+                store.put_daily("splits", str(act_id), _swim_laps(detail, random.Random(act_id)))
             if type_key in ("running", "road_biking", "virtual_ride") and i <= 90:
                 # Lap splits for aerobic decoupling. The last few long runs drift more
                 # and more, so the demo shows the "overreaching" alert.

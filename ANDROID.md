@@ -33,7 +33,8 @@ calendar in one category, start its line with the category, for example `study: 
 
 Every change to the dashboard builds a new APK automatically (GitHub → **Actions** → *Android
 app*). To update, download it from the same page and install it over the old one. Your login
-and data are kept.
+and data are kept. Each build checks that it's signed with the same key as the last one, and
+won't publish if it isn't.
 
 - **"App not installed" or "conflicts with an existing package":** the new build was signed
   with a different key. That happens when no build ran for more than 7 days, because GitHub

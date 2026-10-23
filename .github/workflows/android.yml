@@ -81,11 +81,44 @@ jobs:
           path: ~/.android/debug.keystore
           key: android-signing-key-v1
 
+      # Sign with that key explicitly: Gradle's own default keystore location can differ
+      # on the runner, which would give every build a fresh key.
+      - name: Use the signing key
+        working-directory: frontend/android
+        run: |
+          cat >> app/build.gradle <<'GRADLE'
+
+          android {
+              signingConfigs {
+                  stable {
+                      storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
+                      storePassword "android"
+                      keyAlias "androiddebugkey"
+                      keyPassword "android"
+                  }
+              }
+              buildTypes { debug { signingConfig signingConfigs.stable } }
+          }
+          GRADLE
+
       - name: Build APK
         working-directory: frontend/android
         run: |
           ./gradlew --no-daemon assembleDebug
           cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/LifeDashboard.apk"
+
+      # Refuse to publish an APK that wouldn't install over the previous one.
+      - name: Check the signature
+        run: |
+          want=$(keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey \
+            | sed -n 's/.*SHA256: *//p' | tr -d ':' | tr 'A-F' 'a-f')
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          got=$("$apksigner" verify --print-certs LifeDashboard.apk | sed -n 's/.*SHA-256 digest: *//p' | head -1)
+          echo "Signing key SHA-256: $got"
+          if [ -z "$got" ] || [ "$got" != "$want" ]; then
+            echo "::error::The APK isn't signed with the saved key ($got vs $want)."
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

@@ -315,7 +315,19 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
                 v = normalize.vo2max(d, raw)
                 if v and v.get(name) is not None:
                     vo2.append({"date": d, "value": v[name]})
-        return sport.sport_view(name, acts, vo2, start, end, cfg.key_session_keywords, sport_extras(name))
+        view = sport.sport_view(name, acts, vo2, start, end, cfg.key_session_keywords, sport_extras(name))
+        view["latest"] = latest_session(name, acts)
+        return view
+
+    def latest_session(name: str, acts: list[dict[str, Any]]) -> dict[str, Any] | None:
+        """The most recent session of this sport with its laps (whatever range is shown)."""
+        mine = [a for a in acts if a["sport"] == name]
+        if not mine:
+            return None
+        a = dict(max(mine, key=lambda x: x["start"]))
+        a["metrics"] = sport.derived(a)
+        a["key"] = calendar_feed.key_reason(a["name"], "training", name, cfg.key_session_keywords)
+        return {"session": a, "laps": normalize.laps(store.get_one("splits", str(a["id"])), name)}
 
     def sport_extras(name: str) -> dict[str, Any]:
         """Race predictions, threshold and shoes (run); FTP and weight (ride). See garmin.sync_extras."""

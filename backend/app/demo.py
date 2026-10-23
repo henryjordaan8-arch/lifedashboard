@@ -8,6 +8,7 @@ demo mode exercises exactly the same code paths as real data.
 from __future__ import annotations
 
 import random
+import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -117,30 +118,64 @@ def _detail(type_key: str, name: str, minutes: float, fit: float, rng: random.Ra
     return {"averageHR": 105 + int(rng.gauss(0, 4)), "maxHR": 140}
 
 
-def _splits(detail: dict[str, Any], minutes: float, drift_pct: float) -> dict[str, Any]:
-    """Equal-length laps; heart rate creeps up in the second half by ~drift_pct."""
-    n = max(4, int(minutes // 10))
+def _lap(secs: float, speed: float, hr: float, rng: random.Random, power: float | None = None,
+         cadence: float | None = None, run: bool = True) -> dict[str, Any]:
+    lap = {"duration": secs, "movingDuration": secs, "distance": round(speed * secs, 1), "averageSpeed": speed,
+           "averageHR": round(hr, 1), "maxHR": round(hr + rng.uniform(4, 9)),
+           "elevationGain": round(rng.uniform(0, 12) * secs / 300, 1)}
+    if cadence:
+        lap["averageRunCadence" if run else "averageBikeCadence"] = round(cadence + rng.gauss(0, 1.5), 1)
+    if power:
+        lap |= {"averagePower": round(power), "maxPower": round(power * rng.uniform(1.15, 1.4))}
+    return lap
+
+
+def _splits(detail: dict[str, Any], minutes: float, drift_pct: float, name: str = "",
+            rng: random.Random | None = None) -> dict[str, Any]:
+    """Lap splits. Steady sessions: equal laps whose heart rate creeps up by ~drift_pct over
+    the session (aerobic decoupling). Key sessions: warm-up, reps with recoveries, cool-down."""
+    rng = rng or random.Random(0)
     hr, speed, power = detail["averageHR"], detail.get("averageSpeed"), detail.get("avgPower")
+    run = "averageRunningCadenceInStepsPerMinute" in detail
+    cad = detail.get("averageRunningCadenceInStepsPerMinute") or detail.get("averageBikingCadenceInRevPerMinute")
+    reps = re.search(r"(\d+)\s*[x×]\s*(\d+)\s*min", name)
+    if reps:
+        n, rep_min = int(reps.group(1)), int(reps.group(2))
+        laps = [_lap(600, speed * 0.85, hr - 18, rng, power and power * 0.7, cad and cad - 6, run)]
+        for k in range(n):
+            laps.append(_lap(rep_min * 60, speed * 1.12, hr + 8 + k, rng, power and power * 1.2, cad and cad + 6, run))
+            if k < n - 1:
+                laps.append(_lap(120 if run else 300, speed * 0.7, hr - 12, rng, power and power * 0.55, cad and cad - 10, run))
+        laps.append(_lap(300, speed * 0.8, hr - 15, rng, power and power * 0.6, cad and cad - 8, run))
+        return {"lapDTOs": laps}
+    n = max(4, int(minutes // 10))
     laps = []
     for k in range(n):
         f = 1 + drift_pct / 100 * (k / (n - 1)) * 2 - drift_pct / 100 / 2  # centred on the average
-        laps.append({"duration": minutes * 60 / n, "averageHR": round(hr * f, 1),
-                     "averageSpeed": speed, **({"averagePower": power} if power else {})})
+        laps.append(_lap(minutes * 60 / n, speed, hr * f, rng, power, cad, run))
     return {"lapDTOs": laps}
 
 
 def _swim_laps(detail: dict[str, Any], rng: random.Random) -> dict[str, Any]:
     """Warm-up, a main set of 200s or a 400 effort, cool-down; rests as zero-distance laps."""
     pace = 100 / detail["averageSpeed"]  # s/100m, session average
-    laps = [{"distance": 400, "movingDuration": 4 * pace * 1.06, "duration": 4 * pace * 1.06}]
+    hr = detail["averageHR"]
+
+    def swim(dist: float, t: float, effort: float) -> dict[str, Any]:
+        lengths = dist / 25
+        strokes = round(lengths * rng.uniform(15, 18))
+        return {"distance": dist, "movingDuration": t, "duration": t, "averageHR": round(hr + effort, 1),
+                "maxHR": round(hr + effort + rng.uniform(3, 8)), "totalNumberOfStrokes": strokes,
+                "averageSWOLF": round(t / lengths + strokes / lengths, 1),
+                "averageSwimCadence": round(26 + rng.gauss(0, 1), 1)}
+
+    laps = [swim(400, 4 * pace * 1.06, -8)]
     if rng.random() < 0.5:
         for _ in range(4):
-            t = 2 * pace * rng.uniform(0.9, 0.95)
-            laps += [{"distance": 200, "movingDuration": t, "duration": t}, {"distance": 0, "duration": 30}]
+            laps += [swim(200, 2 * pace * rng.uniform(0.9, 0.95), 6), {"distance": 0, "duration": 30}]
     else:
-        t = 4 * pace * rng.uniform(0.93, 0.96)
-        laps += [{"distance": 400, "movingDuration": t, "duration": t}, {"distance": 0, "duration": 60}]
-    laps.append({"distance": 200, "movingDuration": 2 * pace * 1.1, "duration": 2 * pace * 1.1})
+        laps += [swim(400, 4 * pace * rng.uniform(0.93, 0.96), 8), {"distance": 0, "duration": 60}]
+    laps.append(swim(200, 2 * pace * 1.1, -10))
     return {"lapDTOs": laps}
 
 
@@ -243,7 +278,7 @@ def seed(
                 # Lap splits for aerobic decoupling. The last few long runs drift more
                 # and more, so the demo shows the "overreaching" alert.
                 drift = 7 - i * 0.2 if name.startswith("Long run") and i <= 21 else rng.uniform(1.0, 4.0)
-                store.put_daily("splits", str(act_id), _splits(detail, minutes, drift))
+                store.put_daily("splits", str(act_id), _splits(detail, minutes, drift, name, random.Random(act_id)))
             store.put_activities([(act_id, day, {
                 "activityId": act_id,
                 "activityName": name,

@@ -219,3 +219,33 @@ export function swimEfforts(raw: Raw | null): { t200: number | null; t400: numbe
   }
   return out;
 }
+
+/** Garmin lap splits for the lap table (see laps in normalize.py). Swim rests are kept, flagged. */
+export function laps(raw: Raw | null, sport: string) {
+  const out = [];
+  const r1 = (v: number) => Math.round(v * 10) / 10;
+  for (const [i, lap] of ((raw?.lapDTOs as Raw[] | undefined) ?? []).entries()) {
+    const dist = num(lap.distance) ?? 0, secs = num(lap.duration) ?? 0;
+    const moving = num(lap.movingDuration) || secs;
+    if (!secs) continue;
+    out.push({
+      n: i + 1,
+      rest: sport === "swim" && dist === 0,
+      distance_m: r1(dist),
+      duration_s: r1(secs),
+      pace_s_km: dist && sport === "run" ? r1(moving / (dist / 1000)) : null,
+      pace_s_100: dist && sport === "swim" ? r1(moving / (dist / 100)) : null,
+      speed_kmh: dist && moving && sport === "ride" ? r1(dist / 1000 / (moving / 3600)) : null,
+      avg_hr: int(lap.averageHR),
+      max_hr: int(lap.maxHR),
+      cadence: num(lap.averageRunCadence || lap.averageBikeCadence || lap.averageSwimCadence || lap.averageCadence),
+      avg_power: int(lap.averagePower),
+      max_power: int(lap.maxPower),
+      elevation_gain_m: num(lap.elevationGain),
+      strokes: int(lap.totalNumberOfStrokes || lap.strokes),
+      swolf: num(lap.averageSWOLF || lap.averageSwolf),
+    });
+  }
+  return out;
+}
+export type Lap = ReturnType<typeof laps>[number];

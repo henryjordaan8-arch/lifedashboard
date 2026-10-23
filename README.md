@@ -27,6 +27,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 
 **Running / Cycling / Swimming** tabs, one dashboard per sport. Pick a range (3M · 6M · 1Y · 2Y · 5Y):
 
+- **Latest session**: your most recent run, ride or swim (always the latest, whatever range is picked), with its totals and a lap table. Running shows pace, heart rate, cadence and climb per lap; cycling shows speed, power and heart rate; swimming shows pace per 100 m, strokes and SWOLF per interval, with rests. A bar shows each lap against your fastest (or strongest) one, which is in bold.
 - **Headline numbers** for the range compared with the previous one: sessions, distance, time and key sessions, plus pace for running, power and speed for cycling, and pace and SWOLF for swimming. Performance changes are green or red; volume changes stay neutral, since doing less can be a deliberate taper.
 - **Weekly volume** as distance, time or training load.
 - **Progress charts** with a 4-week rolling average:

@@ -8,7 +8,7 @@ import type { SportData, SportKey } from "../types";
 import { garminGet } from "./garmin";
 import * as normalize from "./normalize";
 import type { DayData } from "./readiness";
-import { addDaysIso, type Extras, normalizeActivity, normalizeVo2, sportView } from "./sport";
+import { addDaysIso, type Extras, keyReason, normalizeActivity, normalizeVo2, sessionMetrics, sportView } from "./sport";
 
 export const HISTORY_DAYS = 365;
 const DAILY_DAYS = 91; // readiness baselines need ~2 months of nights
@@ -28,6 +28,7 @@ interface Cache {
   daily: Record<string, Daily>;
   decoupling: Record<string, number | null>; // activity id -> %, null when splits had none
   swims: Record<string, { t200: number | null; t400: number | null }>; // swim id -> best 200 m / 400 m
+  laps?: Record<string, normalize.Lap[]>; // the latest session of each sport -> its laps
   extras: Required<Omit<Extras, "swim_efforts">>; // race predictions, threshold, shoes, FTP, weight
   syncedUntil: string | null;
   syncedFrom: string | null;
@@ -242,6 +243,22 @@ async function doSync(): Promise<void> {
     }
   });
 
+  // Laps of the most recent run, ride and swim (the "Latest session" table).
+  const laps: Record<string, normalize.Lap[]> = {};
+  for (const sport of ["run", "ride", "swim"]) {
+    const latest = activities.filter((a) => a.sport === sport).sort((a, b) => (a.start < b.start ? 1 : -1))[0];
+    if (!latest) continue;
+    const have = cache.laps?.[latest.id];
+    if (have) laps[latest.id] = have;
+    else {
+      try {
+        laps[latest.id] = normalize.laps(await garminGet(`/activity-service/activity/${latest.id}/splits`), sport);
+      } catch {
+        /* try again next sync */
+      }
+    }
+  }
+
   // Race predictions / weight: the year on first sync, then the last few days.
   const extrasFrom = cache.syncedUntil ? addDaysIso(cache.syncedUntil, -RECENT_DAYS) : want;
   const extras = await fetchExtras(extrasFrom < want ? want : extrasFrom, end, want);
@@ -253,6 +270,7 @@ async function doSync(): Promise<void> {
     daily,
     decoupling,
     swims,
+    laps,
     syncedUntil: end,
     syncedFrom: want,
     lastSync: new Date().toISOString(),
@@ -282,5 +300,13 @@ export function sportData(sport: SportKey, days: number): SportData {
   const swimEfforts = cache.activities
     .filter((a) => a.sport === "swim" && (cache.swims[a.id]?.t200 || cache.swims[a.id]?.t400))
     .map((a) => ({ id: a.id, date: a.date, name: a.name, ...cache.swims[a.id] }));
-  return sportView(sport, cache.activities, vo2, start, end, { ...cache.extras, swim_efforts: swimEfforts });
+  const view = sportView(sport, cache.activities, vo2, start, end, { ...cache.extras, swim_efforts: swimEfforts });
+  const latest = cache.activities.filter((a) => a.sport === sport).sort((a, b) => (a.start < b.start ? 1 : -1))[0];
+  return {
+    ...view,
+    latest: latest
+      ? { session: { ...latest, metrics: sessionMetrics(latest), key: keyReason(latest.name, sport) } as SportData["sessions"][number],
+          laps: cache.laps?.[latest.id] ?? [] }
+      : null,
+  };
 }

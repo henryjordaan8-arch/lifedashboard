@@ -285,6 +285,8 @@ export interface SportData {
   // cycling: Z1–Z4 and Z5–7 (power zones folded into five bands)
   power_zones_s?: number[] | null;
   ftp?: { latest: FtpReading | null; history: FtpReading[]; weight_kg: number | null };
+  /** the most recent session of this sport (whatever the range) and its laps */
+  latest?: { session: SportSession; laps: Lap[] } | null;
   // swimming: critical swim speed from the best 200 m and 400 m in the range
   css?: {
     pace_s100: number;
@@ -292,6 +294,25 @@ export interface SportData {
     t400: { value: number; date: string; name: string };
     history: { date: string; value: number }[];
   } | null;
+}
+
+export interface Lap {
+  n: number;
+  /** a swim rest (zero-distance lap) */
+  rest: boolean;
+  distance_m: number;
+  duration_s: number;
+  pace_s_km: number | null;
+  pace_s_100: number | null;
+  speed_kmh: number | null;
+  avg_hr: number | null;
+  max_hr: number | null;
+  cadence: number | null;
+  avg_power: number | null;
+  max_power: number | null;
+  elevation_gain_m: number | null;
+  strokes: number | null;
+  swolf: number | null;
 }
 
 /** Wake-up and lights-out times from the daily routine ("05:00", "21:00"). */

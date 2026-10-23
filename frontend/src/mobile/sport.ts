@@ -157,7 +157,7 @@ const weekdayIso = (iso: string) => (new Date(`${iso}T00:00:00Z`).getUTCDay() + 
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 864e5);
 const fmean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
 
-function derived(a: Act): Record<string, number | null> {
+export function sessionMetrics(a: Act): Record<string, number | null> {
   const dist = a.distance_m, secs = moving(a), hr = a.avg_hr;
   const out: Record<string, number | null> = {};
   if (a.sport === "run") {
@@ -397,7 +397,7 @@ export function sportView(
     .map((a) => ({ ...a }))
     .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   for (const a of history) {
-    a.metrics = derived(a);
+    a.metrics = sessionMetrics(a);
     a.key = keyReason(a.name, sport);
   }
   const period = history.filter((a) => start <= a.date && a.date <= end);

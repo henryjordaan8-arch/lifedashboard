@@ -332,6 +332,37 @@ def vo2max(day: str, raw: Any) -> dict[str, Any] | None:
     return {"date": day, "run": run, "ride": ride}
 
 
+def laps(raw: Any, sport: str) -> list[dict[str, Any]]:
+    """Garmin lap splits for the lap table. Swim rests (zero-distance laps) are kept, flagged."""
+    out = []
+    for i, lap in enumerate((raw or {}).get("lapDTOs") or [] if isinstance(raw, dict) else []):
+        dist = _num(lap.get("distance")) or 0.0
+        secs = _num(lap.get("duration")) or 0.0
+        moving = _num(lap.get("movingDuration")) or secs
+        if not secs:
+            continue
+        rest = sport == "swim" and dist == 0
+        out.append({
+            "n": i + 1,
+            "rest": rest,
+            "distance_m": round(dist, 1),
+            "duration_s": round(secs, 1),
+            "pace_s_km": round(moving / (dist / 1000), 1) if dist and sport == "run" else None,
+            "pace_s_100": round(moving / (dist / 100), 1) if dist and sport == "swim" else None,
+            "speed_kmh": round(dist / 1000 / (moving / 3600), 1) if dist and moving and sport == "ride" else None,
+            "avg_hr": _int(lap.get("averageHR")),
+            "max_hr": _int(lap.get("maxHR")),
+            "cadence": _num(lap.get("averageRunCadence") or lap.get("averageBikeCadence")
+                            or lap.get("averageSwimCadence") or lap.get("averageCadence")),
+            "avg_power": _int(lap.get("averagePower")),
+            "max_power": _int(lap.get("maxPower")),
+            "elevation_gain_m": _num(lap.get("elevationGain")),
+            "strokes": _int(lap.get("totalNumberOfStrokes") or lap.get("strokes")),
+            "swolf": _num(lap.get("averageSWOLF") or lap.get("averageSwolf")),
+        })
+    return out
+
+
 # Pool intervals that count as a 200 m / 400 m effort (longer ones are scaled down to it).
 SWIM_EFFORTS = {"t200": (200, 300), "t400": (400, 600)}
 

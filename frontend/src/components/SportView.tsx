@@ -4,6 +4,7 @@ import { addDays, duration, mmss, parseDay, shortDate, SPORT_LABEL } from "../fo
 import type { SportBest, SportData, SportKey, SportSession, SportSummary } from "../types";
 import { ChartModal, ExpandButton } from "./ChartModal";
 import { CssCard, FtpCard, PredictionsCard, RampCard, ShoesCard } from "./SportExtras";
+import { LatestSessionCard } from "./LatestSessionCard";
 import { TrendChart, type TrendPoint } from "./TrendChart";
 import { WeeklyVolumeChart } from "./WeeklyVolumeChart";
 
@@ -471,6 +472,7 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
         )}
       </section>
 
+      {loaded?.latest && <LatestSessionCard data={loaded} sport={sport} color={cfg.color} />}
       {loaded && loaded.summary.sessions > 0 && (
         <>
           <section className="card span-8 has-expand">

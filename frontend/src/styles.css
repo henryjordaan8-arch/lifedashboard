@@ -646,3 +646,22 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .stack > .card { flex: 0 0 auto; }
 .stack > .card:last-child { flex: 1 1 auto; }
 .shoes.compact { grid-template-columns: 1fr; }
+
+/* ---------- Latest session ---------- */
+.latest { display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start; }
+.latest-name { font-size: 16px; font-weight: 640; letter-spacing: -0.01em; }
+.latest-key { font-size: 12px; margin-top: 2px; }
+.latest-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 14px; }
+.latest-tiles .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.latest-tiles .v { font-size: 15px; font-weight: 600; margin-top: 1px; }
+.latest-laps { max-height: 380px; overflow-y: auto; min-width: 0; }
+table.laps th button { cursor: default; }
+table.laps th.num, table.laps th.num button { text-align: right; width: 100%; box-sizing: border-box; }
+table.laps thead th { position: sticky; top: 0; background: var(--surface); }
+table.laps tr.rest td { padding-top: 3px; padding-bottom: 3px; font-size: 11.5px; }
+table.laps tr.top-lap td { font-weight: 650; }
+table.laps { table-layout: fixed; }
+table.laps th:first-child, table.laps td:first-child { width: 64px; }
+.lap-bar { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.lap-bar i { display: inline-block; height: 8px; width: 0; max-width: 80px; flex: 0 0 auto; border-radius: 4px; opacity: 0.85; }
+.lap-bar b { font-weight: inherit; min-width: 44px; text-align: right; }

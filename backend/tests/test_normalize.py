@@ -98,3 +98,17 @@ def test_swim_efforts_from_intervals():
                        {"distance": 200, "movingDuration": 190}, {"distance": 300, "movingDuration": 300},
                        {"distance": 100, "movingDuration": 85}]}
     assert normalize.swim_efforts(raw) == {"t200": 190.0, "t400": 420.0}  # 300 m at 1:40 → 200.0, slower
+
+
+def test_laps_for_the_lap_table():
+    raw = {"lapDTOs": [
+        {"distance": 1000, "duration": 300, "movingDuration": 298, "averageHR": 150.4, "maxHR": 158, "averageRunCadence": 172},
+        {"distance": 1000, "duration": 290, "averageHR": 156, "elevationGain": 12},
+    ]}
+    laps = normalize.laps(raw, "run")
+    assert [l["pace_s_km"] for l in laps] == [298.0, 290.0]
+    assert laps[0]["avg_hr"] == 150 and laps[0]["cadence"] == 172 and laps[1]["elevation_gain_m"] == 12
+    swim = normalize.laps({"lapDTOs": [{"distance": 200, "duration": 200, "totalNumberOfStrokes": 120, "averageSWOLF": 37},
+                                       {"distance": 0, "duration": 30}]}, "swim")
+    assert swim[0]["pace_s_100"] == 100.0 and swim[0]["strokes"] == 120 and swim[1]["rest"] is True
+    assert normalize.laps(None, "ride") == []

@@ -99,6 +99,8 @@ def _detail(type_key: str, name: str, minutes: float, fit: float, rng: random.Ra
             "averageBikingCadenceInRevPerMinute": round(88 + rng.gauss(0, 2), 1),
             "elevationGain": rng.uniform(100, 700) if type_key == "road_biking" else rng.uniform(50, 300),
             **{f"hrTimeInZone_{i + 1}": secs * z for i, z in enumerate(zones)},
+            **{f"powerTimeInZone_{i + 1}": secs * z for i, z in enumerate(
+                [0.08, 0.22, 0.25, 0.3, 0.1, 0.04, 0.01] if quality else [0.15, 0.62, 0.17, 0.05, 0.01, 0.0, 0.0])},
         }
     if type_key == "lap_swimming":
         pace100 = 135 - 17 * fit + rng.gauss(0, 3)
@@ -245,6 +247,31 @@ def seed(
             "cycling": {"calendarDate": day, "vo2MaxPreciseValue": round(49.0 + 3 * fit + rng.gauss(0, 0.1), 1)},
         }])
 
+        # Garmin's race predictor, lactate threshold, FTP and weigh-ins, all improving with fitness.
+        t5k = 22 * 60 + 30 - 90 * fit + rng.gauss(0, 4)
+        store.put_daily("racepred", day, {"calendarDate": day, "time5K": round(t5k), "time10K": round(t5k * 2.09),
+                                          "timeHalfMarathon": round(t5k * 4.62), "timeMarathon": round(t5k * 9.8)})
+        step = int(fit * 6) / 6  # threshold and FTP move in steps, like Garmin's
+        store.put_daily("lt", day, [{"calendarDate": day, "speed": round(1000 / (290 - 20 * step) / 10, 4), "heartRate": None},
+                                    {"calendarDate": day, "speed": None, "heartRate": 168 + round(2 * step)}])
+        store.put_daily("ftp", day, {"calendarDate": day, "functionalThresholdPower": round(245 + 25 * step), "sport": "CYCLING"})
+        if d.weekday() in (0, 3):
+            store.put_daily("weight", day, {"calendarDate": day, "weight": round((74.5 - 1.5 * fit + rng.gauss(0, 0.3)) * 1000)})
+
+    store.put_daily("gear", "latest", {
+        "gear": [
+            {"uuid": "shoe-a", "gearTypeName": "Shoes", "displayName": "Daily trainer", "maximumMeters": 800000,
+             "gearStatusName": "active", "dateBegin": (today - timedelta(days=150)).isoformat()},
+            {"uuid": "shoe-b", "gearTypeName": "Shoes", "displayName": "Race shoe", "maximumMeters": None,
+             "gearStatusName": "active", "dateBegin": (today - timedelta(days=60)).isoformat()},
+            {"uuid": "shoe-c", "gearTypeName": "Shoes", "displayName": "Old trainer", "maximumMeters": 700000,
+             "gearStatusName": "retired", "dateBegin": (today - timedelta(days=400)).isoformat()},
+            {"uuid": "bike-a", "gearTypeName": "Bike", "displayName": "Road bike", "gearStatusName": "active"},
+        ],
+        "stats": {"shoe-a": {"totalDistance": 672400, "totalActivities": 71},
+                  "shoe-b": {"totalDistance": 98300, "totalActivities": 12},
+                  "shoe-c": {"totalDistance": 745000, "totalActivities": 88}},
+    })
     store.set_meta("demo_seeded_for", today.isoformat())
 
 

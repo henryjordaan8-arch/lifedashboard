@@ -15,6 +15,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
 - **Training calendar**: a month grid of Garmin activities, planned training and study sessions from your calendar. Each entry is an emoji (🏋️ gym, 🏃 run, 🚴 ride, 🏊 swim, 📚 study) and one word from its title. Done entries are solid colour; planned ones are a lighter tint of the same colour with a dashed outline. Click any entry for its details below the calendar.
 - **Upcoming**: the next 14 days of **key training sessions** (★) and **calls** (☎: any calendar event with "call" in the title; change the word with `CALL_KEYWORDS`).
 - **Training readiness**: a 100-point score with a bar per component, plus alerts for illness, overreaching and sleep debt; see below.
+- **Sleep timing**: when you fell asleep and woke up over the last 14 nights, against the lights-out (21:00) and wake-up (05:00) times in `backend/routine.json`. It also shows your average drift, how consistent your bedtime is, and how many nights you made lights-out within 30 minutes.
 
 **Today** tab:
 
@@ -32,6 +33,17 @@ A personal desktop dashboard for Garmin data, training, work and study.
   - Swimming: pace per 100 m, SWOLF and stroke rate.
 
   Key and base sessions get separate average lines, because a VO₂ session is faster than an easy run by design. The "% better" figure compares the first and last 4 weeks of the range, using base sessions when there are enough of them.
+- **Extra boxes**:
+  - **Running**
+    - *Pace at easy heart rate*: easy runs scaled to your typical easy heart rate. It's the clearest sign your aerobic base is improving.
+    - *Weekly mileage ramp*: flags week-on-week jumps over 10%.
+    - *Race predictions* and *lactate threshold* from Garmin.
+    - *Shoes*: distance per pair against its replacement mileage (700 km if you haven't set one in Garmin).
+  - **Cycling**
+    - *Power zones*: Garmin's 7 zones, with Z5–7 grouped.
+    - *FTP and W/kg*: uses your nearest weigh-in, so log your weight in Garmin to get W/kg.
+
+  These come from Garmin only when your watch and account have them; otherwise the box says what's missing.
 - **Personal bests** across all synced history, flagged when set in the current range: fastest 1 km, 5 km and 10 km, and longest run; best 20-min power and longest ride; fastest pace per 100 m, best SWOLF and longest swim.
 - **Intensity**: time in heart-rate zones Z1–Z5, and the key vs base session split.
 - **Sessions table**, sortable by any column, with ★ on key sessions.

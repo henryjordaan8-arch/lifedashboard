@@ -3,7 +3,7 @@
  * A straight port of backend/app/normalize.py (activity, vo2max), key_reason from
  * calendar_feed.py and backend/app/sport.py; keep them in step.
  */
-import type { SportData, SportKey } from "../types";
+import type { FtpReading, RacePrediction, Shoe, SportData, SportKey, Threshold } from "../types";
 
 type Raw = Record<string, unknown>;
 type Act = Record<string, any>;
@@ -82,8 +82,17 @@ export function normalizeActivity(raw: Raw): Act | null {
     pool_length_m: num(raw.poolLength),
     strokes: int(raw.strokes),
     hr_zones_s: zones.every((z) => z == null) ? null : zones.map((z) => z ?? 0),
+    power_zones_s: powerZones(raw),
     best_splits_s: splits,
   };
+}
+
+/** Garmin's 7 power zones folded into 5 bands like the HR zones: Z1, Z2, Z3, Z4, Z5–7. */
+function powerZones(raw: Raw): number[] | null {
+  const z = [1, 2, 3, 4, 5, 6, 7].map((i) => num(raw[`powerTimeInZone_${i}`]));
+  if (z.every((v) => v == null)) return null;
+  const v = z.map((x) => x ?? 0);
+  return [v[0], v[1], v[2], v[3], v[4] + v[5] + v[6]];
 }
 
 /** Garmin's max-metrics entries (running "generic" and cycling VO2 max), one per day. */
@@ -284,10 +293,66 @@ function bests(sport: SportKey, history: Act[], periodStart: string): SportData[
   return found;
 }
 
-function zones(sessions: Act[]): number[] | null {
-  const withZones = sessions.map((s) => s.hr_zones_s).filter(Boolean) as number[][];
+function zones(sessions: Act[], field = "hr_zones_s"): number[] | null {
+  const withZones = sessions.map((s) => s[field]).filter(Boolean) as number[][];
   if (!withZones.length) return null;
   return [0, 1, 2, 3, 4].map((i) => Math.round(withZones.reduce((t, z) => t + z[i], 0)));
+}
+
+const PACE_AT_HR_WINDOW = 10, PACE_AT_HR_MIN_M = 3000;
+
+/** Easy-run pace scaled to your typical easy heart rate (see pace_at_hr in sport.py). */
+function paceAtHr(history: Act[], period: Act[]): SportData["trends"][number] | null {
+  const usable = (a: Act) => !a.key && !!a.avg_hr && !!a.metrics.pace && (a.distance_m || 0) >= PACE_AT_HR_MIN_M;
+  const base = history.filter(usable);
+  if (base.length < 4) return null;
+  const hrs = base.map((a) => a.avg_hr as number).sort((a, b) => a - b), m = hrs.length >> 1;
+  const med = hrs.length % 2 ? hrs[m] : (hrs[m - 1] + hrs[m]) / 2;
+  const ref = Math.round(med / 5) * 5;
+  const points: Point[] = period
+    .filter((a) => usable(a) && Math.abs(a.avg_hr - ref) <= PACE_AT_HR_WINDOW)
+    .map((a) => ({ date: a.date, value: round((a.metrics.pace * a.avg_hr) / ref, 3), name: a.name, key: null, id: a.id }));
+  if (points.length < 2) return null;
+  return { key: "pace_at_hr", label: `Pace at ${ref} bpm`, unit: "s/km", direction: -1, points, change: change(points, "base"), ref_hr: ref };
+}
+
+/** Optional Garmin extras for the run / ride dashboards (see run_extras / ride_extras in sport.py). */
+export interface Extras {
+  predictions?: RacePrediction[];
+  threshold?: Threshold[];
+  shoes?: Shoe[];
+  ftp?: { date: string; ftp: number }[];
+  weight?: { date: string; kg: number }[];
+}
+
+const inRange = <T extends { date: string }>(rows: T[], start: string, end: string) => rows.filter((r) => start <= r.date && r.date <= end);
+/** Step values: the reading in effect at the start, then the changes. */
+function stepsIn<T extends { date: string }>(rows: T[], start: string, end: string): T[] {
+  const before = rows.filter((r) => r.date < start);
+  return [...(before.length ? [{ ...before[before.length - 1], date: start }] : []), ...inRange(rows, start, end)];
+}
+const latest = <T extends { date: string }>(rows: T[]) => (rows.length ? rows.reduce((a, b) => (b.date > a.date ? b : a)) : null);
+
+function runExtras(x: Extras, start: string, end: string) {
+  const lt = [...(x.threshold ?? [])].sort((a, b) => (a.date < b.date ? -1 : 1))
+    .filter((r, i, all) => i === 0 || r.pace_s_km !== all[i - 1].pace_s_km || r.hr !== all[i - 1].hr);
+  return {
+    predictions: inRange(x.predictions ?? [], start, end),
+    threshold: { latest: latest(lt), history: stepsIn(lt, start, end) },
+    shoes: x.shoes ?? [],
+  };
+}
+
+function rideExtras(x: Extras, start: string, end: string) {
+  const weights = [...(x.weight ?? [])].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const ftp = [...(x.ftp ?? [])].sort((a, b) => (a.date < b.date ? -1 : 1)).filter((r, i, all) => i === 0 || r.ftp !== all[i - 1].ftp);
+  const kgAt = (day: string) =>
+    weights.length ? weights.reduce((a, b) => (Math.abs(daysBetween(b.date, day)) < Math.abs(daysBetween(a.date, day)) ? b : a)).kg : null;
+  const rows: FtpReading[] = ftp.map((r) => {
+    const kg = kgAt(r.date);
+    return { date: r.date, ftp: r.ftp, wkg: kg ? round(r.ftp / kg, 2) : null };
+  });
+  return { ftp: { latest: latest(rows), history: stepsIn(rows, start, end), weight_kg: latest(weights)?.kg ?? null } };
 }
 
 export function sportView(
@@ -296,6 +361,7 @@ export function sportView(
   vo2History: { date: string; value: number }[],
   start: string,
   end: string,
+  extras: Extras = {},
 ): SportData {
   const history = allActivities
     .filter((a) => a.sport === sport)
@@ -309,18 +375,24 @@ export function sportView(
   const span = daysBetween(start, end) + 1;
   const prevStart = addDaysIso(start, -span), prevEnd = addDaysIso(start, -1);
   const previous = history.filter((a) => prevStart <= a.date && a.date <= prevEnd);
-  return {
+  const trendList = trends(sport, period);
+  const pah = sport === "run" ? paceAtHr(history, period) : null;
+  if (pah) trendList.push(pah);
+  const out: SportData = {
     sport,
     start,
     end,
     summary: summarize(sport, period),
     previous: summarize(sport, previous),
     weekly: weekly(period, start, end),
-    trends: trends(sport, period),
+    trends: trendList,
     bests: bests(sport, history, start),
     zones_s: zones(period),
     vo2max: vo2History.filter((v) => start <= v.date && v.date <= end),
     sessions: [...period].reverse() as SportData["sessions"],
     history_start: history.length ? history[0].date : null,
   };
+  if (sport === "run") return { ...out, ...runExtras(extras, start, end) };
+  if (sport === "ride") return { ...out, power_zones_s: zones(period, "power_zones_s"), ...rideExtras(extras, start, end) };
+  return out;
 }

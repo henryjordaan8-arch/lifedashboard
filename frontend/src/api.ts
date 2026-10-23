@@ -1,5 +1,5 @@
 import { isUnlocked, resume, STATIC, staticGet, unlock } from "./static";
-import type { Activity, CalEvent, DayPlan, Readiness, SleepNight, SportData, SportKey, Status, Week } from "./types";
+import type { Activity, CalEvent, SleepTargets, DayPlan, Readiness, SleepNight, SportData, SportKey, Status, Week } from "./types";
 
 /** The Android app (`npm run build:app`): no backend; src/mobile/local.ts answers instead. */
 export const APP = import.meta.env.VITE_APP === "1";
@@ -52,7 +52,7 @@ export const api = {
   },
   status: () => get<Status>("/api/status"),
   sync: () => get<Status>("/api/sync", { method: "POST" }),
-  sleep: (days: number) => get<{ nights: SleepNight[] }>(`/api/sleep?days=${days}`).then((r) => r.nights),
+  sleep: (days: number) => get<{ nights: SleepNight[]; targets?: SleepTargets }>(`/api/sleep?days=${days}`),
   activities: (start: string, end: string) =>
     get<{ activities: Activity[] }>(`/api/activities?start=${start}&end=${end}`).then((r) => r.activities),
   upcoming: (days: number) =>

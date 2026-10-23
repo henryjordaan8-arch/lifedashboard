@@ -232,7 +232,24 @@ export interface TrendSeries {
   direction: 1 | -1 | 0;
   points: { date: string; value: number; name: string; key: string | null }[];
   change: { from: number; to: number; pct: number | null; group: "base" | "all" } | null;
+  /** pace_at_hr only: the reference heart rate the paces are scaled to */
+  ref_hr?: number;
 }
+
+export interface RacePrediction { date: string; "5k": number | null; "10k": number | null; half: number | null; marathon: number | null }
+export interface Threshold { date: string; pace_s_km: number | null; hr: number | null }
+export interface Shoe {
+  id: string;
+  name: string;
+  km: number;
+  max_km: number;
+  /** false when Garmin has no maximum set and the default is used */
+  max_set: boolean;
+  activities: number | null;
+  since: string | null;
+  retired: boolean;
+}
+export interface FtpReading { date: string; ftp: number; wkg: number | null }
 
 export interface SportBest {
   label: string;
@@ -256,4 +273,14 @@ export interface SportData {
   vo2max: { date: string; value: number }[];
   sessions: SportSession[];
   history_start: string | null;
+  // running
+  predictions?: RacePrediction[];
+  threshold?: { latest: Threshold | null; history: Threshold[] };
+  shoes?: Shoe[];
+  // cycling: Z1–Z4 and Z5–7 (power zones folded into five bands)
+  power_zones_s?: number[] | null;
+  ftp?: { latest: FtpReading | null; history: FtpReading[]; weight_kg: number | null };
 }
+
+/** Wake-up and lights-out times from the daily routine ("05:00", "21:00"). */
+export interface SleepTargets { wake: string; bed: string }

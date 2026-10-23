@@ -6,10 +6,14 @@ import { ReadinessCard } from "./components/ReadinessCard";
 import { SportView } from "./components/SportView";
 import { TodayView } from "./components/TodayView";
 import { SleepCard } from "./components/SleepCard";
+import { SleepTimingCard } from "./components/SleepTimingCard";
 import { TrainingCalendar } from "./components/TrainingCalendar";
 import { UpcomingCard } from "./components/UpcomingCard";
 import { ago } from "./format";
-import type { CalEvent, Readiness, SleepNight, Status } from "./types";
+import type { CalEvent, Readiness, SleepNight, SleepTargets, Status } from "./types";
+
+// Your routine's wake-up and lights-out (backend/routine.json); the Android app has no routine file.
+const DEFAULT_TARGETS: SleepTargets = { wake: "05:00", bed: "21:00" };
 
 function greeting() {
   const h = new Date().getHours();
@@ -39,6 +43,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
   }, []);
   const [status, setStatus] = useState<Status | null>(null);
   const [nights, setNights] = useState<SleepNight[]>([]);
+  const [sleepTargets, setSleepTargets] = useState<SleepTargets>(DEFAULT_TARGETS);
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [upcoming, setUpcoming] = useState<{ configured: boolean; events: CalEvent[]; highlights?: CalEvent[] }>({
     configured: true,
@@ -52,7 +57,8 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
     try {
       const [s, n, r, u] = await Promise.all([api.status(), api.sleep(30), api.readiness(), api.upcoming(14)]);
       setStatus(s);
-      setNights(n);
+      setNights(n.nights);
+      setSleepTargets(n.targets ?? DEFAULT_TARGETS);
       setReadiness(r);
       setUpcoming(u);
       setRefreshKey((k) => k + 1);
@@ -160,6 +166,7 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
             configured={upcoming.configured}
             onSetUp={APP ? () => setCalendarOpen(true) : undefined}
           />
+          <SleepTimingCard nights={nights} targets={sleepTargets} />
         </main>
       )}
       <footer className="app-foot">Life Dashboard · version {status?.version ?? "—"}</footer>

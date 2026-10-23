@@ -201,6 +201,7 @@ def activity(raw: dict[str, Any]) -> dict[str, Any] | None:
         "pool_length_m": _num(raw.get("poolLength")),
         "strokes": _int(raw.get("strokes")),
         "hr_zones_s": _zones(raw),
+        "power_zones_s": _power_zones(raw),
         "best_splits_s": {
             label: _num(raw.get(f"fastestSplit_{meters}"))
             for label, meters in (("1k", 1000), ("mile", 1609), ("5k", 5000), ("10k", 10000), ("half", 21098))
@@ -212,6 +213,106 @@ def activity(raw: dict[str, Any]) -> dict[str, Any] | None:
 def _zones(raw: dict[str, Any]) -> list[float] | None:
     zones = [_num(raw.get(f"hrTimeInZone_{i}")) for i in range(1, 6)]
     return None if all(z is None for z in zones) else [z or 0.0 for z in zones]
+
+
+def _power_zones(raw: dict[str, Any]) -> list[float] | None:
+    """Garmin's 7 power zones folded into 5 bands like the HR zones: Z1, Z2, Z3, Z4, Z5–7."""
+    zones = [_num(raw.get(f"powerTimeInZone_{i}")) for i in range(1, 8)]
+    if all(z is None for z in zones):
+        return None
+    z = [v or 0.0 for v in zones]
+    return [z[0], z[1], z[2], z[3], z[4] + z[5] + z[6]]
+
+
+def _rows(raw: Any) -> list[dict[str, Any]]:
+    """Garmin returns a dict, a list, or a dict wrapping a list; always give a list of dicts."""
+    if isinstance(raw, dict):
+        for key in ("entries", "values", "data", "dateWeightList"):
+            if isinstance(raw.get(key), list):
+                return [r for r in raw[key] if isinstance(r, dict)]
+        return [raw]
+    return [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
+
+
+def _date_of(row: dict[str, Any]) -> str | None:
+    for key in ("calendarDate", "date", "from", "updatedDate"):
+        v = row.get(key)
+        if isinstance(v, str) and len(v) >= 10:
+            return v[:10]
+    return None
+
+
+def race_predictions(raw: Any) -> list[dict[str, Any]]:
+    """Garmin race predictor: predicted 5K / 10K / half / marathon times (seconds), per day."""
+    out = []
+    for r in _rows(raw):
+        times = {k: _num(r.get(f)) for k, f in (("5k", "time5K"), ("10k", "time10K"),
+                                                 ("half", "timeHalfMarathon"), ("marathon", "timeMarathon"))}
+        d = _date_of(r)
+        if d and any(times.values()):
+            out.append({"date": d, **times})
+    return sorted(out, key=lambda x: x["date"])
+
+
+def lactate_threshold(day: str, raw: Any) -> dict[str, Any] | None:
+    """Garmin's latest running lactate threshold: pace (s/km) and heart rate."""
+    speed = hr = None
+    when = None
+    for r in _rows(raw):
+        speed = speed or _num(r.get("speed"))
+        hr = hr or _num(r.get("heartRate") or r.get("hearRate"))
+        when = when or _date_of(r)
+    if not speed and not hr:
+        return None
+    # Garmin stores this speed in tens of m/s (0.32 = 3.2 m/s); real paces are > 1.5 m/s.
+    if speed and speed < 1.5:
+        speed *= 10
+    return {"date": when or day, "pace_s_km": round(1000 / speed) if speed else None, "hr": _int(hr)}
+
+
+def cycling_ftp(day: str, raw: Any) -> dict[str, Any] | None:
+    """Garmin's latest cycling FTP (watts)."""
+    for r in _rows(raw):
+        ftp = _num(r.get("functionalThresholdPower") or r.get("value"))
+        if ftp:
+            return {"date": _date_of(r) or day, "ftp": round(ftp)}
+    return None
+
+
+def weights(raw: Any) -> list[dict[str, Any]]:
+    """Weigh-ins (Garmin stores grams) as kg per day; the last reading of a day wins."""
+    by_day: dict[str, float] = {}
+    for r in _rows(raw):
+        g, d = _num(r.get("weight")), _date_of(r)
+        if g and d:
+            by_day[d] = round(g / 1000 if g > 1000 else g, 1)
+    return [{"date": d, "kg": kg} for d, kg in sorted(by_day.items())]
+
+
+DEFAULT_SHOE_KM = 700  # typical replacement mileage when no maximum is set in Garmin
+
+
+def shoes(gear: Any, stats: dict[str, Any]) -> list[dict[str, Any]]:
+    """Running shoes from Garmin gear, with the distance logged on each (stats keyed by uuid)."""
+    out = []
+    for g in _rows(gear):
+        if "shoe" not in str(g.get("gearTypeName", "")).lower():
+            continue
+        uuid = g.get("uuid")
+        st = stats.get(uuid) or {}
+        km = (_num(st.get("totalDistance")) or 0) / 1000
+        max_m = _num(g.get("maximumMeters"))
+        name = (g.get("displayName") or g.get("customMakeModel")
+                or " ".join(x for x in (g.get("gearMakeName"), g.get("gearModelName")) if x) or "Shoes")
+        out.append({
+            "id": uuid, "name": name, "km": round(km, 1),
+            "max_km": round(max_m / 1000) if max_m else DEFAULT_SHOE_KM,
+            "max_set": bool(max_m),
+            "activities": _int(st.get("totalActivities")),
+            "since": str(g.get("dateBegin") or "")[:10] or None,
+            "retired": str(g.get("gearStatusName", "active")).lower() != "active",
+        })
+    return sorted(out, key=lambda s: (s["retired"], -s["km"]))
 
 
 def vo2max(day: str, raw: Any) -> dict[str, Any] | None:

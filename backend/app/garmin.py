@@ -181,4 +181,60 @@ def sync(
         store.put_daily("splits", str(a["id"]), payload or {})
         counts["splits"] += 1
         time.sleep(REQUEST_PAUSE_S)
+
+    counts["extras"] = sync_extras(client, store, today)
     return counts
+
+
+EXTRAS_DAYS = 365  # race predictions and weight history (Garmin caps predictions at a year per call)
+
+
+def sync_extras(client: Any, store: Store, today: date) -> int:
+    """Race predictions, lactate threshold, cycling FTP, weight and shoes.
+
+    Each is optional (not every watch or account has them), so a failure is logged
+    and skipped. Ranged ones fetch the year once, then only the last few days.
+    """
+    done = 0
+    t = today.isoformat()
+    since = store.get_meta("extras_synced_until")
+    start = max(today - timedelta(days=EXTRAS_DAYS),
+                date.fromisoformat(since) - timedelta(days=REFRESH_RECENT_DAYS) if since else date.min)
+
+    def attempt(name: str, fn: Callable[[], None]) -> None:
+        nonlocal done
+        try:
+            fn()
+            done += 1
+        except Exception as exc:  # noqa: BLE001 - optional extras never fail the sync
+            log.warning("garmin %s failed: %s", name, type(exc).__name__)
+
+    def race_predictions() -> None:
+        raw = client.get_race_predictions(start.isoformat(), t, "daily")
+        for row in raw if isinstance(raw, list) else [raw]:
+            if isinstance(row, dict) and row.get("calendarDate"):
+                store.put_daily("racepred", str(row["calendarDate"])[:10], row)
+
+    def weight() -> None:
+        raw = client.get_body_composition(start.isoformat(), t) or {}
+        for row in raw.get("dateWeightList") or []:
+            if isinstance(row, dict) and row.get("calendarDate"):
+                store.put_daily("weight", str(row["calendarDate"])[:10], row)
+
+    def shoes() -> None:
+        profile = client.connectapi("/userprofile-service/socialProfile") or {}
+        number = profile.get("profileId") or (client.get_device_last_used() or {}).get("userProfileNumber")
+        gear = client.get_gear(str(number)) or []
+        stats = {g["uuid"]: client.get_gear_stats(g["uuid"]) for g in gear
+                 if isinstance(g, dict) and g.get("uuid") and "shoe" in str(g.get("gearTypeName", "")).lower()}
+        store.put_daily("gear", "latest", {"gear": gear, "stats": stats})
+
+    attempt("race predictions", race_predictions)
+    # Latest values only; one snapshot per day builds up their history.
+    attempt("lactate threshold", lambda: store.put_daily(
+        "lt", t, client.connectapi("/biometric-service/biometric/latestLactateThreshold")))
+    attempt("cycling FTP", lambda: store.put_daily("ftp", t, client.get_cycling_ftp()))
+    attempt("weight", weight)
+    attempt("shoes", shoes)
+    store.set_meta("extras_synced_until", t)
+    return done

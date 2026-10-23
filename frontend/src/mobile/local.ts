@@ -56,7 +56,7 @@ export async function localGet(path: string): Promise<unknown> {
         .filter(([d, x]) => d >= from && x.sleep)
         .sort(([a], [b]) => (a < b ? -1 : 1))
         .map(([, x]) => ({ ...x.sleep, hrv: x.hrv, body_battery_wake: x.stats?.body_battery_wake ?? null }));
-      return { nights };
+      return { nights }; // no routine on the phone: the dashboard uses its default sleep targets
     }
     case "/api/readiness":
       return buildReadiness(today, data.daily(), data.activitiesWithDecoupling(),

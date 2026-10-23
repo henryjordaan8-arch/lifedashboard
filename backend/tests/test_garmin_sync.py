@@ -97,3 +97,35 @@ def test_existing_install_without_from_marker_backfills(monkeypatch):
     garmin.sync(c, store, backfill_days=5, today=today, activity_backfill_days=1826)
     assert [x for x in c.calls if x[0] == "activities"] == [
         ("activities", "2026-09-27", "2026-09-30"), ("activities", "2021-09-30", "2026-09-29")]
+
+
+class ExtrasClient:
+    def get_race_predictions(self, start, end, kind):
+        return [{"calendarDate": end, "time5K": 1300}]
+
+    def connectapi(self, path, **_):
+        if path.endswith("socialProfile"):
+            return {"profileId": 42, "displayName": "me"}
+        return [{"calendarDate": "2026-09-01", "speed": 0.34, "heartRate": 168}]
+
+    def get_cycling_ftp(self):
+        raise RuntimeError("no power meter")  # one missing extra mustn't stop the others
+
+    def get_body_composition(self, start, end):
+        return {"dateWeightList": [{"calendarDate": end, "weight": 74000}]}
+
+    def get_gear(self, number):
+        assert number == "42"
+        return [{"uuid": "a", "gearTypeName": "Shoes"}]
+
+    def get_gear_stats(self, uuid):
+        return {"totalDistance": 1000}
+
+
+def test_sync_extras_stores_what_it_can():
+    store, today = Store(":memory:"), date(2026, 9, 30)
+    assert garmin.sync_extras(ExtrasClient(), store, today) == 4
+    assert store.get_one("racepred", "2026-09-30")["time5K"] == 1300
+    assert store.get_one("weight", "2026-09-30")["weight"] == 74000
+    assert store.get_one("gear", "latest")["stats"] == {"a": {"totalDistance": 1000}}
+    assert store.get_one("lt", "2026-09-30") and not store.get_one("ftp", "2026-09-30")

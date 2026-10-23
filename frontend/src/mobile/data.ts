@@ -8,7 +8,7 @@ import type { SportData, SportKey } from "../types";
 import { garminGet } from "./garmin";
 import * as normalize from "./normalize";
 import type { DayData } from "./readiness";
-import { addDaysIso, normalizeActivity, normalizeVo2, sportView } from "./sport";
+import { addDaysIso, type Extras, normalizeActivity, normalizeVo2, sportView } from "./sport";
 
 export const HISTORY_DAYS = 365;
 const DAILY_DAYS = 91; // readiness baselines need ~2 months of nights
@@ -17,7 +17,7 @@ const RECENT_DAYS = 2; // re-fetched every sync: Garmin keeps revising them
 const PAGE = 100;
 const VO2_CHUNK_DAYS = 31;
 const PARALLEL = 4;
-const KEY = "ld.mobile.data.v2";
+const KEY = "ld.mobile.data.v3"; // v3: activities carry power zones, so refetch once
 
 type Activity = Record<string, any>;
 interface Daily extends DayData { readiness: normalize.GarminReadiness | null }
@@ -26,6 +26,7 @@ interface Cache {
   vo2: { date: string; run: number | null; ride: number | null }[];
   daily: Record<string, Daily>;
   decoupling: Record<string, number | null>; // activity id -> %, null when splits had none
+  extras: Required<Extras>; // race predictions, threshold, shoes, FTP, weight
   syncedUntil: string | null;
   syncedFrom: string | null;
   lastSync: string | null; // ISO timestamp
@@ -33,6 +34,7 @@ interface Cache {
 
 const empty = (): Cache => ({
   activities: [], vo2: [], daily: {}, decoupling: {}, syncedUntil: null, syncedFrom: null, lastSync: null,
+  extras: { predictions: [], threshold: [], shoes: [], ftp: [], weight: [] },
 });
 
 function read(): Cache {
@@ -43,13 +45,13 @@ function read(): Cache {
   }
 }
 let cache = read();
-localStorage.removeItem("ld.mobile.data"); // first version's sports-only cache
+for (const old of ["ld.mobile.data", "ld.mobile.data.v2"]) localStorage.removeItem(old);
 
 export const lastSync = () => cache.lastSync;
 export const hasData = () => cache.syncedUntil != null;
 export function clearData() {
   cache = empty();
-  displayName = null;
+  profile = null;
   localStorage.removeItem(KEY);
 }
 
@@ -95,14 +97,64 @@ async function fetchVo2(start: string, end: string): Promise<Cache["vo2"]> {
   return out;
 }
 
-let displayName: string | null = null;
-async function userName(): Promise<string> {
-  if (!displayName) {
-    const prof = await garminGet<{ displayName?: string }>("/userprofile-service/socialProfile");
+let profile: { displayName: string; profileId?: number } | null = null;
+async function userProfile() {
+  if (!profile) {
+    const prof = await garminGet<{ displayName?: string; profileId?: number }>("/userprofile-service/socialProfile");
     if (!prof?.displayName) throw new Error("Couldn't read your Garmin profile");
-    displayName = prof.displayName;
+    profile = { displayName: prof.displayName, profileId: prof.profileId };
   }
-  return displayName;
+  return profile;
+}
+const userName = async () => (await userProfile()).displayName;
+
+/** Merge rows by date, newer wins. */
+function byDate<T extends { date: string }>(old: T[], fresh: T[], from: string): T[] {
+  const m = new Map(old.map((r) => [r.date, r]));
+  for (const r of fresh) m.set(r.date, r);
+  return [...m.values()].filter((r) => r.date >= from).sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+/** Race predictions, lactate threshold, FTP, weight and shoes. Each is optional; a failure keeps the old data. */
+async function fetchExtras(from: string, end: string, want: string): Promise<Cache["extras"]> {
+  const x = { ...cache.extras };
+  const name = await userName();
+  const attempt = async (fn: () => Promise<void>) => {
+    try {
+      await fn();
+    } catch {
+      /* not every watch or account has these */
+    }
+  };
+  await attempt(async () => {
+    const raw = await garminGet(`/metrics-service/metrics/racepredictions/daily/${name}`, { fromCalendarDate: from, toCalendarDate: end });
+    x.predictions = byDate(x.predictions, normalize.racePredictions(raw), want);
+  });
+  await attempt(async () => {
+    const lt = normalize.lactateThreshold(end, await garminGet("/biometric-service/biometric/latestLactateThreshold"));
+    if (lt) x.threshold = byDate(x.threshold, [lt], want); // dated when Garmin last changed it
+  });
+  await attempt(async () => {
+    const ftp = normalize.cyclingFtp(end, await garminGet("/biometric-service/biometric/latestFunctionalThresholdPower/CYCLING"));
+    if (ftp) x.ftp = byDate(x.ftp, [ftp], want);
+  });
+  await attempt(async () => {
+    const raw = await garminGet("/weight-service/weight/dateRange", { startDate: from, endDate: end });
+    x.weight = byDate(x.weight, normalize.weights(raw), want);
+  });
+  await attempt(async () => {
+    let number = (await userProfile()).profileId;
+    if (!number) number = (await garminGet<{ userProfileNumber?: number }>("/device-service/deviceservice/mylastused"))?.userProfileNumber;
+    const gear = await garminGet<Record<string, any>[]>("/gear-service/gear/filterGear", { userProfilePk: String(number) });
+    const stats: Record<string, Record<string, any>> = {};
+    for (const g of Array.isArray(gear) ? gear : []) {
+      if (g?.uuid && String(g.gearTypeName ?? "").toLowerCase().includes("shoe")) {
+        stats[g.uuid] = (await garminGet<Record<string, any>>(`/gear-service/gear/stats/${g.uuid}`).catch(() => null)) ?? {};
+      }
+    }
+    x.shoes = normalize.shoes(gear, stats);
+  });
+  return x;
 }
 
 /** Sleep, HRV, daily summary and Garmin readiness for one day. A failed part is left empty. */
@@ -175,8 +227,13 @@ async function doSync(): Promise<void> {
     }
   });
 
+  // Race predictions / weight: the year on first sync, then the last few days.
+  const extrasFrom = cache.syncedUntil ? addDaysIso(cache.syncedUntil, -RECENT_DAYS) : want;
+  const extras = await fetchExtras(extrasFrom < want ? want : extrasFrom, end, want);
+
   cache = {
     activities,
+    extras,
     vo2: [...vo2ByDate.values()].filter((v) => v.date >= want).sort((a, b) => (a.date < b.date ? -1 : 1)),
     daily,
     decoupling,
@@ -206,5 +263,5 @@ export function sportData(sport: SportKey, days: number): SportData {
     sport === "swim"
       ? []
       : cache.vo2.filter((v) => v[sport] != null).map((v) => ({ date: v.date, value: v[sport] as number }));
-  return sportView(sport, cache.activities, vo2, start, end);
+  return sportView(sport, cache.activities, vo2, start, end, cache.extras);
 }

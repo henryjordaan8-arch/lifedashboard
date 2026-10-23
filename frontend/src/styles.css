@@ -578,3 +578,32 @@ table.sessions tbody tr:hover { background: var(--surface-2); }
 .detail .desc-cell .ink2 { font-size: 12.5px; }
 
 .app-foot { margin-top: 28px; text-align: center; font-size: 11px; color: var(--muted); }
+
+/* ---------- Sleep timing ---------- */
+.timing { display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start; }
+.timing-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.timing-legend { display: flex; gap: 16px; font-size: 11px; margin-top: 4px; padding-left: 64px; }
+.timing-legend i { display: inline-block; vertical-align: middle; margin-right: 5px; }
+.timing-legend .bar { width: 14px; height: 8px; border-radius: 3px; background: var(--accent); }
+.timing-legend .dash { width: 14px; border-top: 1.5px dashed var(--ink); }
+
+/* ---------- Sport extras ---------- */
+.mini-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 12px; }
+.mini-tiles.four { grid-template-columns: repeat(4, 1fr); }
+.mini-tiles .tile { padding: 10px 12px; min-width: 0; }
+.mini-tiles .tile .v { font-size: 18px; white-space: nowrap; }
+.mini-tiles .tile .d { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ramp { display: flex; flex-direction: column; gap: 5px; }
+.ramp-row { display: grid; grid-template-columns: 52px 1fr 40px 64px; gap: 8px; align-items: center; font-size: 12px; }
+.ramp-row > span:nth-child(3), .ramp-row > span:nth-child(4) { text-align: right; }
+.ramp-bar { height: 10px; background: var(--neutral); border-radius: 4px; overflow: hidden; }
+.ramp-bar i { display: block; height: 100%; border-radius: 4px; }
+.lt-row { display: flex; gap: 10px; align-items: baseline; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--grid); font-size: 13px; flex-wrap: wrap; }
+.lt-row .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-right: auto; }
+.shoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.shoe-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.shoe-head span { font-size: 11px; font-weight: 600; white-space: nowrap; }
+.shoe-bar { height: 8px; background: var(--neutral); border-radius: 4px; overflow: hidden; margin: 6px 0; }
+.shoe-bar i { display: block; height: 100%; border-radius: 4px; }
+.two-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-width: 0; }
+.two-charts > div { min-width: 0; }

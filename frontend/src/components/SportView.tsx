@@ -3,6 +3,7 @@ import { api } from "../api";
 import { addDays, duration, mmss, parseDay, shortDate, SPORT_LABEL } from "../format";
 import type { SportBest, SportData, SportKey, SportSession, SportSummary } from "../types";
 import { ChartModal, ExpandButton } from "./ChartModal";
+import { FtpCard, PredictionsCard, RampCard, ShoesCard } from "./SportExtras";
 import { TrendChart, type TrendPoint } from "./TrendChart";
 import { WeeklyVolumeChart } from "./WeeklyVolumeChart";
 
@@ -31,7 +32,7 @@ interface Column {
 
 interface ChartSpec {
   title: string;
-  hint: string;
+  hint: string | ((d: SportData) => string);
   series: (d: SportData) => TrendPoint[];
   fmt: (v: number) => string;
   invert?: boolean;
@@ -89,6 +90,14 @@ const CONFIG: Record<SportKey, SportConfig> = {
       { title: "Pace", hint: "4-week averages · up = faster", series: trend("pace"), fmt: mmss, invert: true, change: trendChange("pace") },
       { title: "Aerobic efficiency", hint: "metres/min per heartbeat · higher = fitter", series: trend("efficiency"), fmt: (v) => v.toFixed(2), change: trendChange("efficiency") },
       { title: "VO₂ max", hint: "Garmin running estimate", series: (d) => d.vo2max, fmt: n1, lineOnly: true, change: vo2Change },
+      {
+        title: "Pace at easy heart rate",
+        hint: (d) => {
+          const ref = d.trends.find((t) => t.key === "pace_at_hr")?.ref_hr;
+          return ref ? `easy runs scaled to ${ref} bpm · up = faster` : "needs a few easy runs with heart rate";
+        },
+        series: trend("pace_at_hr"), fmt: mmss, invert: true, change: trendChange("pace_at_hr"),
+      },
     ],
     columns: [
       { label: "Date", get: date },
@@ -210,29 +219,31 @@ function bestValue(b: SportBest) {
 }
 
 const ZONE_NAMES = ["Z1 recovery", "Z2 endurance", "Z3 tempo", "Z4 threshold", "Z5 VO₂ max"];
+// Garmin's 7 power zones, folded into 5 bands (the backend adds Z5–7 together).
+const POWER_ZONE_NAMES = ["Z1 active recovery", "Z2 endurance", "Z3 tempo", "Z4 threshold", "Z5–7 VO₂ max & above"];
 
-function Zones({ zones }: { zones: number[] | null }) {
-  if (!zones) return <div className="empty">No heart-rate zone data in this range.</div>;
+function Zones({ zones, names = ZONE_NAMES, what = "heart-rate" }: { zones: number[] | null | undefined; names?: string[]; what?: string }) {
+  if (!zones) return <div className="empty">No {what} zone data in this range.</div>;
   const total = zones.reduce((a, b) => a + b, 0) || 1;
   const pct = zones.map((z) => (z / total) * 100);
   const easy = pct[0] + pct[1];
   const hard = pct[3] + pct[4];
   return (
     <div>
-      <div className="zonebar" role="img" aria-label="Time in heart-rate zones">
-        {pct.map((p, i) => (p > 0 ? <div key={i} style={{ flex: p, background: `var(--zone-${i + 1})` }} title={`${ZONE_NAMES[i]} · ${Math.round(p)}%`} /> : null))}
+      <div className="zonebar" role="img" aria-label={`Time in ${what} zones`}>
+        {pct.map((p, i) => (p > 0 ? <div key={i} style={{ flex: p, background: `var(--zone-${i + 1})` }} title={`${names[i]} · ${Math.round(p)}%`} /> : null))}
       </div>
       <div className="zone-rows">
         {zones.map((z, i) => (
           <div className="zone-row" key={i}>
-            <span><span className="sw" style={{ background: `var(--zone-${i + 1})` }} />{ZONE_NAMES[i]}</span>
+            <span><span className="sw" style={{ background: `var(--zone-${i + 1})` }} />{names[i]}</span>
             <span className="muted tnum">{duration(z)}</span>
             <b className="tnum">{Math.round(pct[i])}%</b>
           </div>
         ))}
       </div>
       <p className="note">
-        {Math.round(easy)}% easy (Z1–2) · {Math.round(pct[2])}% moderate · {Math.round(hard)}% hard (Z4–5)
+        {Math.round(easy)}% easy (Z1–2) · {Math.round(pct[2])}% moderate · {Math.round(hard)}% hard (Z4+)
       </p>
     </div>
   );
@@ -492,7 +503,7 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
                 <span>{c.title}</span>
                 <ChangeChip change={c.change?.(loaded) ?? null} />
               </div>
-              <div className="chart-hint">{c.hint}</div>
+              <div className="chart-hint">{typeof c.hint === "function" ? c.hint(loaded) : c.hint}</div>
               <TrendChart
                 points={c.series(loaded)}
                 color={cfg.color}
@@ -504,6 +515,25 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
               />
             </section>
           ))}
+
+          {sport === "run" && (
+            <>
+              <RampCard data={loaded} color={cfg.color} />
+              <PredictionsCard data={loaded} color={cfg.color} />
+            </>
+          )}
+          {sport === "ride" && (
+            <>
+              <section className="card span-4">
+                <div className="card-head">
+                  <h2>Power zones</h2>
+                  <span className="sub">time in power zones</span>
+                </div>
+                <Zones zones={loaded.power_zones_s} names={POWER_ZONE_NAMES} what="power" />
+              </section>
+              <FtpCard data={loaded} color={cfg.color} />
+            </>
+          )}
 
           <section className="card span-8">
             <div className="card-head">
@@ -531,6 +561,7 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
             </div>
             )}
           </section>
+          {sport === "run" && <ShoesCard data={loaded} />}
         </>
       )}
       {loaded && expanded && (() => {
@@ -551,7 +582,7 @@ export function SportView({ sport, refreshKey, maxDays }: { sport: SportKey; ref
         return (
           <ChartModal
             title={`${cfg.title} · ${c.title}`}
-            subtitle={<>{c.hint} · {range} <ChangeChip change={c.change?.(loaded) ?? null} /></>}
+            subtitle={<>{typeof c.hint === "function" ? c.hint(loaded) : c.hint} · {range} <ChangeChip change={c.change?.(loaded) ?? null} /></>}
             onClose={close}
           >
             <TrendChart

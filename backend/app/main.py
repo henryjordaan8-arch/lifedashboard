@@ -193,7 +193,9 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
             night["hrv"] = h
             night["body_battery_wake"] = s["body_battery_wake"] if s else None
             nights.append(night)
-        return {"nights": nights}
+        routine = planner.load_routine(cfg.routine_path)
+        # Sleep timing is compared with the routine's wake-up and lights-out times.
+        return {"nights": nights, "targets": {"wake": routine["day_start"], "bed": routine["day_end"]}}
 
     def _day(value: str | None) -> date:
         if not value:
@@ -313,7 +315,23 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
                 v = normalize.vo2max(d, raw)
                 if v and v.get(name) is not None:
                     vo2.append({"date": d, "value": v[name]})
-        return sport.sport_view(name, acts, vo2, start, end, cfg.key_session_keywords)
+        return sport.sport_view(name, acts, vo2, start, end, cfg.key_session_keywords, sport_extras(name))
+
+    def sport_extras(name: str) -> dict[str, Any]:
+        """Race predictions, threshold and shoes (run); FTP and weight (ride). See garmin.sync_extras."""
+        everything = ("0000-01-01", "9999-12-31")
+        if name == "run":
+            preds = [p for raw in store.get_daily("racepred", *everything).values()
+                     for p in normalize.race_predictions(raw)]
+            lt = [x for d, raw in store.get_daily("lt", *everything).items()
+                  if (x := normalize.lactate_threshold(d, raw))]
+            gear = store.get_one("gear", "latest") or {}
+            return {"predictions": preds, "threshold": lt, "shoes": normalize.shoes(gear.get("gear"), gear.get("stats") or {})}
+        if name == "ride":
+            ftp = [x for d, raw in store.get_daily("ftp", *everything).items() if (x := normalize.cycling_ftp(d, raw))]
+            weight = [w for raw in store.get_daily("weight", *everything).values() for w in normalize.weights(raw)]
+            return {"ftp": ftp, "weight": weight}
+        return {}
 
     @app.get("/api/readiness")
     def readiness_inputs() -> dict[str, Any]:

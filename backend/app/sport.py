@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from statistics import fmean
+from statistics import fmean, median
 from typing import Any
 
 from .calendar_feed import key_reason
@@ -131,6 +131,80 @@ def trends(sport: str, sessions: list[dict]) -> list[dict[str, Any]]:
     return out
 
 
+PACE_AT_HR_WINDOW = 10  # bpm either side of the reference heart rate
+PACE_AT_HR_MIN_M = 3000
+
+
+def pace_at_hr(history: list[dict], period: list[dict]) -> dict[str, Any] | None:
+    """Easy-run pace scaled to one reference heart rate: the clearest aerobic-fitness trend.
+
+    The reference is your typical easy-run heart rate (median of base runs, to the nearest
+    5 bpm). Runs within ±10 bpm of it are scaled linearly (speed ∝ heart rate) to it.
+    """
+    def usable(a: dict) -> bool:
+        return (not a["key"] and bool(a.get("avg_hr")) and bool(a["metrics"].get("pace"))
+                and (a.get("distance_m") or 0) >= PACE_AT_HR_MIN_M)
+
+    base = [a for a in history if usable(a)]
+    if len(base) < 4:
+        return None
+    ref = int(round(median(a["avg_hr"] for a in base) / 5) * 5)
+    points = [
+        {"date": a["date"], "value": round(a["metrics"]["pace"] * a["avg_hr"] / ref, 3), "name": a["name"],
+         "key": None, "id": a["id"]}
+        for a in period if usable(a) and abs(a["avg_hr"] - ref) <= PACE_AT_HR_WINDOW
+    ]
+    if len(points) < 2:
+        return None
+    return {"key": "pace_at_hr", "label": f"Pace at {ref} bpm", "unit": "s/km", "direction": -1,
+            "points": points, "change": _change(points, "base"), "ref_hr": ref}
+
+
+def _in(rows: list[dict], start: date, end: date) -> list[dict]:
+    return [r for r in rows if start.isoformat() <= r["date"] <= end.isoformat()]
+
+
+def _steps_in(rows: list[dict], start: date, end: date) -> list[dict]:
+    """Readings that change in steps (threshold, FTP): the one in effect at the start, then changes."""
+    before = [r for r in rows if r["date"] < start.isoformat()]
+    first = [{**before[-1], "date": start.isoformat()}] if before else []
+    return first + _in(rows, start, end)
+
+
+def _latest(rows: list[dict]) -> dict | None:
+    return max(rows, key=lambda r: r["date"]) if rows else None
+
+
+def run_extras(extras: dict[str, Any], start: date, end: date) -> dict[str, Any]:
+    """Race predictions, lactate threshold and shoes for the running dashboard."""
+    lt = sorted(extras.get("threshold") or [], key=lambda r: r["date"])
+    # One reading per change: the daily snapshots repeat until Garmin updates the value.
+    lt = [r for i, r in enumerate(lt) if i == 0 or (r["pace_s_km"], r["hr"]) != (lt[i - 1]["pace_s_km"], lt[i - 1]["hr"])]
+    return {
+        "predictions": _in(extras.get("predictions") or [], start, end),
+        "threshold": {"latest": _latest(lt), "history": _steps_in(lt, start, end)},
+        "shoes": extras.get("shoes") or [],
+    }
+
+
+def ride_extras(extras: dict[str, Any], start: date, end: date) -> dict[str, Any]:
+    """FTP and watts per kilo (using the weigh-in nearest each FTP reading)."""
+    weights = sorted(extras.get("weight") or [], key=lambda r: r["date"])
+    ftp = sorted(extras.get("ftp") or [], key=lambda r: r["date"])
+    ftp = [r for i, r in enumerate(ftp) if i == 0 or r["ftp"] != ftp[i - 1]["ftp"]]
+
+    def kg_at(day: str) -> float | None:
+        if not weights:
+            return None
+        return min(weights, key=lambda w: abs(date.fromisoformat(w["date"]) - date.fromisoformat(day)))["kg"]
+
+    rows = [{"date": r["date"], "ftp": r["ftp"],
+             "wkg": round(r["ftp"] / kg, 2) if (kg := kg_at(r["date"])) else None} for r in ftp]
+    latest = _latest(rows)
+    return {"ftp": {"latest": latest, "history": _steps_in(rows, start, end),
+                    "weight_kg": _latest(weights)["kg"] if weights else None}}
+
+
 def _change(points: list[dict], group: str) -> dict[str, Any] | None:
     """Mean of the first 4 weeks vs the last 4 weeks of the range."""
     if len(points) < 2:
@@ -178,8 +252,8 @@ def bests(sport: str, history: list[dict], period_start: str) -> list[dict[str, 
     return found
 
 
-def zones(sessions: list[dict]) -> list[float] | None:
-    with_zones = [s["hr_zones_s"] for s in sessions if s.get("hr_zones_s")]
+def zones(sessions: list[dict], field: str = "hr_zones_s") -> list[float] | None:
+    with_zones = [s[field] for s in sessions if s.get(field)]
     if not with_zones:
         return None
     return [round(sum(z[i] for z in with_zones)) for i in range(5)]
@@ -192,6 +266,7 @@ def sport_view(
     start: date,
     end: date,
     key_keywords: list[str] | None = None,
+    extras: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     history = sorted((a for a in all_activities if a["sport"] == sport), key=lambda a: a["start"])
     for a in history:
@@ -202,17 +277,26 @@ def sport_view(
     prev_start, prev_end = start - timedelta(days=span), start - timedelta(days=1)
     previous = [a for a in history if prev_start.isoformat() <= a["date"] <= prev_end.isoformat()]
 
-    return {
+    trend_list = trends(sport, period)
+    if sport == "run" and (p := pace_at_hr(history, period)):
+        trend_list.append(p)
+    out: dict[str, Any] = {
         "sport": sport,
         "start": start.isoformat(),
         "end": end.isoformat(),
         "summary": summarize(sport, period),
         "previous": summarize(sport, previous),
         "weekly": weekly(period, start, end),
-        "trends": trends(sport, period),
+        "trends": trend_list,
         "bests": bests(sport, history, start.isoformat()),
         "zones_s": zones(period),
         "vo2max": [v for v in vo2_history if start.isoformat() <= v["date"] <= end.isoformat()],
         "sessions": list(reversed(period)),
         "history_start": history[0]["date"] if history else None,
     }
+    if sport == "run":
+        out |= run_extras(extras or {}, start, end)
+    elif sport == "ride":
+        out["power_zones_s"] = zones(period, "power_zones_s")
+        out |= ride_extras(extras or {}, start, end)
+    return out

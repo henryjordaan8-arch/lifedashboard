@@ -1,10 +1,12 @@
 # Life Dashboard for Android
 
 A phone app with the **Dashboard** (sleep, readiness score and alerts, training calendar,
-upcoming key sessions and calls) and the **Running**, **Cycling** and **Swimming** tabs. It
+upcoming key sessions and calls), **Today** (your day hour by hour, key sessions ahead and the
+weekly checklist) and the **Running**, **Cycling** and **Swimming** tabs. It
 signs in to Garmin itself, so it needs no computer, server or GitHub sync. It keeps the
 **last 12 months** of activities and the last 3 months of sleep and health data on the phone.
-There's no Today tab, because the daily routine and weekly goals live on your computer.
+Your daily routine and weekly goals come from `backend/routine.json` and `backend/goals.json`,
+built into the app: change them there and the next APK picks them up.
 
 The layout is the desktop layout, scaled to fit the screen. Turn the phone sideways for a
 bigger view, and tap a point or bar in a chart to see its details.

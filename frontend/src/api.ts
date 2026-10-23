@@ -8,7 +8,7 @@ export const APP = import.meta.env.VITE_APP === "1";
 export const AUTH_EVENT = "lifedashboard:login-required";
 
 async function get<T>(path: string, init?: RequestInit): Promise<T> {
-  if (APP) return (await import("./mobile/local")).localGet(path) as Promise<T>;
+  if (APP) return (await import("./mobile/local")).localGet(path, init) as Promise<T>;
   if (STATIC) {
     if (!isUnlocked() && path !== "/api/session" && path !== "/api/logout") {
       window.dispatchEvent(new Event(AUTH_EVENT));

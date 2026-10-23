@@ -7,6 +7,7 @@ import type { Status } from "../types";
 import { eventsBetween, isCall, sources } from "./calendar";
 import * as data from "./data";
 import { SignInNeeded } from "./garmin";
+import { dayPlan, evaluateGoal, GOALS, keySessions } from "./planner";
 import { buildReadiness } from "./readiness";
 import { addDaysIso } from "./sport";
 
@@ -34,7 +35,43 @@ function status(): Status {
   };
 }
 
-export async function localGet(path: string): Promise<unknown> {
+const MANUAL_KEY = "ld.week.manual"; // ticks for "manual" goals: { "<week start>:<goal id>": true }
+function manualTicks(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(MANUAL_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+const nowLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+const mondayOf = (iso: string) => addDaysIso(iso, -((new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7));
+
+async function week(day: string) {
+  const ws = mondayOf(day), we = addDaysIso(ws, 6);
+  const events = sources().length ? await eventsBetween(ws, addDaysIso(we, 1)) : [];
+  const daily = data.daily();
+  const sleepByDay: Record<string, { duration_s: number; score: number | null } | null> = {};
+  const stepsByDay: Record<string, number | null> = {};
+  for (let d = ws; d <= we; d = addDaysIso(d, 1)) {
+    if (!daily[d]) continue;
+    sleepByDay[d] = daily[d].sleep;
+    stepsByDay[d] = daily[d].stats?.steps ?? null;
+  }
+  const ticks = manualTicks();
+  const manual = Object.fromEntries(GOALS.map((g) => [g.id, !!ticks[`${ws}:${g.id}`]]));
+  const now = new Date();
+  return {
+    week_start: ws,
+    week_end: we,
+    using_example: false,
+    goals: GOALS.map((g) => evaluateGoal(g, {
+      weekStart: ws, now, nowIso: nowLocal(), activities: data.activitiesBetween(ws, we), events, sleepByDay, stepsByDay, manual,
+    })),
+  };
+}
+
+export async function localGet(path: string, init?: RequestInit): Promise<unknown> {
   const url = new URL(path, "http://x");
   const q = url.searchParams;
   const today = data.today();
@@ -74,6 +111,22 @@ export async function localGet(path: string): Promise<unknown> {
         events: ahead.filter((e) => e.category === "training"),
         highlights: ahead.filter((e) => (e.category === "training" && e.key_reason) || e.is_call),
       };
+    }
+    case "/api/day": {
+      const d = q.get("date") ?? today;
+      const events = sources().length ? await eventsBetween(d, addDaysIso(d, 1)) : [];
+      return { ...dayPlan(d, events, data.activitiesBetween(d, d)), configured: sources().length > 0 };
+    }
+    case "/api/key-sessions":
+      return { events: keySessions(sources().length ? await eventsBetween(today, addDaysIso(today, num("days", 21))) : [], nowLocal()) };
+    case "/api/week":
+      return week(q.get("date") ?? today);
+    case "/api/week/manual": {
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      const ticks = manualTicks();
+      ticks[`${mondayOf(body.week_start)}:${body.goal_id}`] = !!body.done;
+      localStorage.setItem(MANUAL_KEY, JSON.stringify(ticks));
+      return week(body.week_start);
     }
     case "/api/events": {
       const cat = q.get("category");

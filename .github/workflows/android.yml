@@ -7,6 +7,8 @@ on:
   push:
     paths:
       - "frontend/**"
+      - "backend/routine.json" # built into the app's Today view
+      - "backend/goals.json"
       - ".github/workflows/android.yml"
       - "VERSION"
   workflow_dispatch: # Actions tab → "Run workflow"

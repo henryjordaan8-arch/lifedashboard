@@ -71,8 +71,8 @@ export function SleepStagesChart({ nights }: { nights: SleepNight[] }) {
                 width={band}
                 height={innerH}
                 fill="transparent"
-                onMouseEnter={() => setHover(i)}
-                onMouseLeave={() => setHover(null)}
+                onPointerEnter={() => setHover(i)} onPointerDown={() => setHover(i)}
+                onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}
               />
             </g>
           );

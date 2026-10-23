@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { APP } from "../api";
 import { addDays, CATEGORY_LABEL, clock, duration, isoDay, km, parseDay, SPORT_LABEL } from "../format";
 import type { Activity, CalEvent, Category, DayPlan } from "../types";
 
@@ -176,7 +177,11 @@ export function DayTimeline({
 
       {plan && !plan.configured && (
         <div className="empty">
-          Connect Google Calendar (<code>GCAL_*_ICS_URLS</code> in <code>backend/.env</code>) to see your day.
+          {APP ? (
+            <>Tap <b>Calendar</b> at the top to add your Google Calendar and see your day.</>
+          ) : (
+            <>Connect Google Calendar (<code>GCAL_*_ICS_URLS</code> in <code>backend/.env</code>) to see your day.</>
+          )}
         </div>
       )}
 

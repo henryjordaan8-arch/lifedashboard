@@ -9,6 +9,8 @@ WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# The Android app's Today view builds in your routine and goals (imported from ../backend).
+COPY backend/routine.json backend/goals.json /backend/
 RUN npm run build
 
 # ---- 2. the app ---------------------------------------------------------------

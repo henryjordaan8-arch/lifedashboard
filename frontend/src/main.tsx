@@ -9,7 +9,7 @@ const root = createRoot(document.getElementById("root")!);
 if (import.meta.env.VITE_APP === "1") {
   // Android app (see api.ts APP); a constant here, so web builds drop this branch.
   // The phone shows the desktop layout as-is, scaled to fit the screen width (see .app in styles.css).
-  const DESIGN_WIDTH = 1360;
+  const DESIGN_WIDTH = 1440;
   document.documentElement.classList.add("app");
   const fit = () => {
     document.documentElement.style.setProperty("--app-zoom", String(Math.min(1, window.innerWidth / DESIGN_WIDTH)));

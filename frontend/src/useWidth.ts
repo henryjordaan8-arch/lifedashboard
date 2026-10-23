@@ -17,3 +17,13 @@ export function useWidth<T extends HTMLElement>(initial = 600) {
   }, []);
   return [ref, width] as const;
 }
+
+/**
+ * Pointer x inside an element, in the element's own CSS pixels. The phone app scales the
+ * page (CSS zoom), and then clientX / getBoundingClientRect are in scaled screen pixels
+ * while the chart draws in unscaled ones; offsetWidth vs rect width undoes that.
+ */
+export function localX(e: { clientX: number; currentTarget: HTMLElement }): number {
+  const r = e.currentTarget.getBoundingClientRect();
+  return ((e.clientX - r.left) * e.currentTarget.offsetWidth) / (r.width || 1);
+}

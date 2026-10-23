@@ -96,7 +96,7 @@ export function SleepTiming({ nights, targets }: { nights: SleepNight[]; targets
                   <rect x={x(r.bed)} y={y + 4} width={Math.max(2, x(r.wake) - x(r.bed))} height={ROW - 8} rx={4}
                     fill="var(--accent)" />
                   <rect x={PAD.left} y={y} width={innerW} height={ROW} fill="transparent"
-                    onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />
+                    onPointerEnter={() => setHover(i)} onPointerDown={() => setHover(i)} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} />
                 </g>
               );
             })}

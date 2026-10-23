@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { parseDay, shortDate } from "../format";
-import { useWidth } from "../useWidth";
+import { localX, useWidth } from "../useWidth";
 
 export interface TrendPoint {
   date: string;
@@ -101,20 +101,23 @@ export function TrendChart({
   const monthTicks = months.filter((m) => m >= start).filter((_, i, arr) => arr.length <= 7 || i % 2 === 0);
   const hp = hover != null ? points[hover] : null;
 
+  const pick = (e: React.PointerEvent<HTMLDivElement>) => {
+    const mx = localX(e);
+    let best = 0;
+    points.forEach((p, i) => {
+      if (Math.abs(x(p.date) - mx) < Math.abs(x(points[best].date) - mx)) best = i;
+    });
+    setHover(best);
+  };
+
   return (
     <div
       className="chart-wrap"
       ref={ref}
-      onMouseMove={(e) => {
-        const bx = e.currentTarget.getBoundingClientRect().left;
-        const mx = e.clientX - bx;
-        let best = 0;
-        points.forEach((p, i) => {
-          if (Math.abs(x(p.date) - mx) < Math.abs(x(points[best].date) - mx)) best = i;
-        });
-        setHover(best);
-      }}
-      onMouseLeave={() => setHover(null)}
+      onPointerMove={pick}
+      onPointerDown={pick}
+      // A finger "leaves" as soon as it lifts: keep the tooltip until the next tap.
+      onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}
     >
       <svg width={width} height={H} role="img">
         {ticks.map((t) => (

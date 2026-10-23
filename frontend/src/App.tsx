@@ -21,18 +21,16 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-const ALL_TABS = [
+const TABS = [
   { id: "dashboard", label: "Dashboard" },
   { id: "today", label: "Today" },
   { id: "run", label: "Running" },
   { id: "ride", label: "Cycling" },
   { id: "swim", label: "Swimming" },
 ] as const;
-type Tab = (typeof ALL_TABS)[number]["id"];
+type Tab = (typeof TABS)[number]["id"];
 // Android app only (keeps its calendar code out of the web builds).
 const CalendarSettings = lazy(() => import("./components/CalendarSettings").then((m) => ({ default: m.CalendarSettings })));
-// The Android app has no Today view (no routine or weekly goals on the phone).
-const TABS = APP ? ALL_TABS.filter((t) => t.id !== "today") : ALL_TABS;
 const tabFromHash = (): Tab => TABS.find((t) => `#/${t.id}` === window.location.hash)?.id ?? "dashboard";
 
 export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {

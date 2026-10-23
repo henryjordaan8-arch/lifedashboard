@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { duration, parseDay } from "../format";
 import type { SleepNight } from "../types";
-import { useWidth } from "../useWidth";
+import { localX, useWidth } from "../useWidth";
 
 interface Metric {
   key: string;
@@ -123,6 +123,10 @@ export function NightTrend({ nights, all }: { nights: SleepNight[]; all: SleepNi
     d += `${d && pts[i - 1]?.v != null ? "L" : "M"}${x(i)},${y(p.v)}`;
   });
   const last = pts.length - 1;
+  const pick = (e: React.PointerEvent<HTMLDivElement>) => {
+    const i = Math.round(((localX(e) - PAD.left) / innerW) * last);
+    setHover(Math.max(0, Math.min(last, i)));
+  };
   const hp = hover != null ? pts[hover] : null;
   const outside = (v: number) => band != null && (v < band[0] || v > band[1]);
 
@@ -131,12 +135,9 @@ export function NightTrend({ nights, all }: { nights: SleepNight[]; all: SleepNi
       {header}
       <div
         className="chart-wrap"
-        onMouseMove={(e) => {
-          const bx = e.currentTarget.getBoundingClientRect().left;
-          const i = Math.round(((e.clientX - bx - PAD.left) / innerW) * (pts.length - 1));
-          setHover(Math.max(0, Math.min(last, i)));
-        }}
-        onMouseLeave={() => setHover(null)}
+        onPointerMove={pick}
+        onPointerDown={pick}
+        onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}
       >
         <svg width={width} height={H} role="img" aria-label={`${m.label}, last ${pts.length} nights`}>
           {ticks.map((t) => (

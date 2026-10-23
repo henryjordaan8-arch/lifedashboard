@@ -162,7 +162,7 @@ function IntensityCard({ weeks }: { weeks: IntensityWeek[] }) {
                       <text x={x + barW / 2} y={H - 6} textAnchor="middle">{shortDate(w.week_start)}</text>
                     )}
                     <rect x={PAD.left + band * i} y={PAD.top} width={band} height={H - PAD.top - PAD.bottom} fill="transparent"
-                      onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />
+                      onPointerEnter={() => setHover(i)} onPointerDown={() => setHover(i)} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} />
                   </g>
                 );
               })}

@@ -19,9 +19,13 @@ Band = tuple[float, float, float, float]  # (x_lo, x_hi, points_at_lo, points_at
 
 SCORE_VERSION = 2
 
+# Garmin recovery time never syncs from the current watch, so it's left out of the score
+# (the rest is scaled up to 100). Set to True after a watch upgrade to bring it back.
+USE_RECOVERY_TIME = False
+
 # key: (label, max points, bands). Values below the first band / above the last are
-# clamped to that band's end points.
-COMPONENTS: dict[str, tuple[str, int, list[Band]]] = {
+# clamped to that band's end points. The full formula adds up to 100.
+ALL_COMPONENTS: dict[str, tuple[str, int, list[Band]]] = {
     # delta from personal 60-day rolling baseline, %
     "hrv": ("HRV vs 60-day baseline", 28,
             [(-30, -15, 0, 7), (-15, -5, 8, 15), (-5, 5, 16, 21), (5, 10, 22, 25), (10, 20, 26, 28)]),
@@ -55,6 +59,9 @@ COMPONENTS: dict[str, tuple[str, int, list[Band]]] = {
     "stress": ("Stress, last 3 days", 3,
                [(0, 25.5, 3, 3), (25.5, 50.5, 2, 2), (50.5, 75.5, 1, 1), (75.5, 100, 0, 0)]),
 }
+
+COMPONENTS = {k: v for k, v in ALL_COMPONENTS.items() if USE_RECOVERY_TIME or k != "recovery"}
+TOTAL_POINTS = sum(m for _, m, _ in COMPONENTS.values())
 
 BANDS = [  # (min score, key, label)
     (75, "high", "Ready for a hard session"),
@@ -154,7 +161,7 @@ def compute(
         raw["acwr"] = (ratio, f"{ratio:.2f}", "7-day vs 28-day load (EWMA)")
 
     # Recovery time
-    if recovery_time_h is not None:
+    if recovery_time_h is not None and "recovery" in COMPONENTS:
         raw["recovery"] = (recovery_time_h, f"{recovery_time_h:.0f} h", "Garmin recovery time")
 
     # Sleep history, 3 nights
@@ -209,11 +216,12 @@ def compute(
                                "value": None, "value_text": "—", "detail": "no data yet", "status": "none"})
 
     score = None
-    if available >= 50:  # need at least half the formula to say anything
+    if available >= TOTAL_POINTS / 2:  # need at least half the formula to say anything
         value = round(earned / available * 100)
         band = next(b for b in BANDS if value >= b[0])
         score = {"value": value, "band": band[1], "label": band[2], "components": components,
-                 "earned": round(earned, 1), "available": available, "version": SCORE_VERSION}
+                 "earned": round(earned, 1), "available": available, "total": TOTAL_POINTS,
+                 "version": SCORE_VERSION}
 
     return {"score": score, "components": components, "acwr_series": acwr_series}
 

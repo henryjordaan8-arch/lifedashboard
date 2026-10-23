@@ -155,6 +155,8 @@ export interface ReadinessScore {
   components: ScoreComponent[];
   earned: number;
   available: number;
+  /** Points in the formula as configured (100 unless a component is switched off). */
+  total?: number;
   version: number;
 }
 

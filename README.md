@@ -48,7 +48,7 @@ The score is out of 100 points. Within each band, points scale with how far into
 | HRV | 28 | last night vs your 60-day average | ≥ +10% … below −15% |
 | Sleep last night | 18 | Garmin sleep score | 90–100 … below 45 |
 | Load ratio (ACWR) | 15 | EWMA 7-day ÷ 28-day training load | 0.8–1.0 … above 1.5 or below 0.5 |
-| Recovery time | 12 | Garmin recovery time | 0 h … over 48 h |
+| Recovery time *(off)* | 12 | Garmin recovery time | 0 h … over 48 h |
 | Sleep, last 3 nights | 7 | average sleep score | ≥ 80 … below 50 |
 | Resting HR | 5 | vs 7-day average | at or below … more than 6 bpm above |
 | Respiration | 5 | vs 30-day average | at or below … more than 2 breaths/min above |
@@ -56,6 +56,7 @@ The score is out of 100 points. Within each band, points scale with how far into
 | VO₂ max | 3 | 14-day trend | stable or rising … down more than 5% |
 | Stress | 3 | Garmin average, last 3 days | 0–25 … over 75 |
 
+- **Recovery time is switched off** because it doesn't sync from the current watch. The other 88 points are scaled up to 100. To bring it back, set `USE_RECOVERY_TIME = True` in `backend/app/scoring.py` (and `USE_RECOVERY_TIME = true` in `frontend/src/mobile/readiness.ts` for the phone app).
 - **Missing data:** components with no data (e.g. no respiration from your watch) are left out, and the total is rescaled to 100.
 - **Colours:** each component shows a bar of points earned. Amber and red mark the ones holding the score back.
 - **Aerobic decoupling:** compares output per heartbeat in the first and second half of a run or ride, using lap splits. Key sessions are left out because intervals aren't steady efforts.

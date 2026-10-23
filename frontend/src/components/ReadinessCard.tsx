@@ -85,9 +85,9 @@ export function ReadinessCard({ data }: { data: Readiness | null }) {
                 <span aria-hidden>{BAND[score.band].icon}</span> {titleCase(score.band === "rest" ? "recover" : score.band)}
               </div>
               <div className="band-label">{score.label}</div>
-              {score.available < 100 && (
+              {score.available < (score.total ?? 100) && (
                 <div className="garmin-ref">
-                  Rescaled to 100: {100 - score.available} points' worth of inputs have no data yet.
+                  Rescaled to 100: {(score.total ?? 100) - score.available} points' worth of inputs have no data yet.
                 </div>
               )}
             </>

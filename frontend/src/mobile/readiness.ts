@@ -116,7 +116,11 @@ function fitness(vo2: Record<string, { run: number | null; ride: number | null }
 
 // ---------- scoring.py ----------
 
-const COMPONENTS: [string, string, number, Band[]][] = [
+// Garmin recovery time never syncs from the current watch, so it's left out of the score
+// (the rest is scaled up to 100). Set to true after a watch upgrade to bring it back.
+const USE_RECOVERY_TIME = false;
+
+const ALL_COMPONENTS: [string, string, number, Band[]][] = [
   ["hrv", "HRV vs 60-day baseline", 28, [[-30, -15, 0, 7], [-15, -5, 8, 15], [-5, 5, 16, 21], [5, 10, 22, 25], [10, 20, 26, 28]]],
   ["sleep", "Sleep last night", 18, [[20, 45, 0, 3], [45, 60, 4, 7], [60, 75, 8, 12], [75, 90, 13, 16], [90, 100, 17, 18]]],
   ["acwr", "Load ratio (ACWR)", 15,
@@ -129,6 +133,8 @@ const COMPONENTS: [string, string, number, Band[]][] = [
   ["vo2max", "VO₂ max, 14-day trend", 3, [[-20, -5, 0, 0], [-5, -2, 1, 1], [-2, -0.5, 2, 2], [-0.5, 20, 3, 3]]],
   ["stress", "Stress, last 3 days", 3, [[0, 25.5, 3, 3], [25.5, 50.5, 2, 2], [50.5, 75.5, 1, 1], [75.5, 100, 0, 0]]],
 ];
+const COMPONENTS = ALL_COMPONENTS.filter(([key]) => USE_RECOVERY_TIME || key !== "recovery");
+const TOTAL_POINTS = COMPONENTS.reduce((t, [, , max]) => t + max, 0);
 const BANDS: [number, "high" | "good" | "low" | "rest", string][] = [
   [75, "high", "Ready for a hard session"],
   [55, "good", "Train as planned"],
@@ -187,7 +193,7 @@ function compute(today: string, days: Record<string, Metrics>, acts: Act[], vo2:
   const ratio = acwrSeries.length ? acwrSeries[acwrSeries.length - 1][1] : null;
   if (ratio != null) raw.acwr = [ratio, f(ratio, 2), "7-day vs 28-day load (EWMA)"];
 
-  if (recoveryH != null) raw.recovery = [recoveryH, `${f(recoveryH)} h`, "Garmin recovery time"];
+  if (recoveryH != null && USE_RECOVERY_TIME) raw.recovery = [recoveryH, `${f(recoveryH)} h`, "Garmin recovery time"];
 
   const sh = mean(daysBack(today, 3).map((d) => g(d, "sleep_score")), 2);
   if (sh != null) raw.sleep_history = [sh, f(sh), "average sleep score, last 3 nights"];
@@ -230,10 +236,10 @@ function compute(today: string, days: Record<string, Metrics>, acts: Act[], vo2:
     }
   }
   let score: Readiness["score"] = null;
-  if (available >= 50) {
+  if (available >= TOTAL_POINTS / 2) {
     const value = Math.round((earned / available) * 100);
     const band = BANDS.find((b) => value >= b[0])!;
-    score = { value, band: band[1], label: band[2], components, earned: round(earned, 1), available, version: 2 };
+    score = { value, band: band[1], label: band[2], components, earned: round(earned, 1), available, total: TOTAL_POINTS, version: 2 };
   }
   return { score, components, acwrSeries };
 }

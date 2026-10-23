@@ -25,7 +25,7 @@ def runs(loads_per_day: float = 60, days: int = 120) -> list[dict]:
 
 
 def test_points_tables_sum_to_100_and_follow_spec():
-    assert sum(m for _, m, _ in scoring.COMPONENTS.values()) == 100
+    assert sum(m for _, m, _ in scoring.ALL_COMPONENTS.values()) == 100
     hrv = scoring.COMPONENTS["hrv"][2]
     assert scoring.banded(12, hrv) >= 26 and scoring.banded(-20, hrv) <= 7
     assert 16 <= scoring.banded(0, hrv) <= 21 and 22 <= scoring.banded(7, hrv) <= 25
@@ -34,16 +34,16 @@ def test_points_tables_sum_to_100_and_follow_spec():
     acwr = scoring.COMPONENTS["acwr"][2]
     assert scoring.banded(0.9, acwr) >= 14 and scoring.banded(1.1, acwr) >= 11
     assert scoring.banded(1.7, acwr) <= 3 and scoring.banded(0.4, acwr) <= 3
-    assert scoring.banded(0, scoring.COMPONENTS["recovery"][2]) == 12
+    assert scoring.banded(0, scoring.ALL_COMPONENTS["recovery"][2]) == 12
     assert scoring.banded(80, scoring.COMPONENTS["stress"][2]) == 0
 
 
 def test_healthy_steady_day_scores_well():
     res = scoring.compute(TODAY, healthy_days(), runs(), {iso(i): 50.0 for i in range(30)}, 0)
     s = res["score"]
-    assert s and s["available"] == 100 and s["value"] >= 70
+    assert s and s["available"] == s["total"] == scoring.TOTAL_POINTS and s["value"] >= 70
     by_key = {c["key"]: c for c in res["components"]}
-    assert by_key["recovery"]["points"] == 12 and by_key["vo2max"]["points"] == 3
+    assert by_key["vo2max"]["points"] == 3
 
 
 def test_missing_components_rescale_not_penalise():
@@ -54,7 +54,7 @@ def test_missing_components_rescale_not_penalise():
     s = res["score"]
     assert s["available"] < 100
     missing = [c for c in res["components"] if not c["available"]]
-    assert {c["key"] for c in missing} == {"respiration", "recovery", "vo2max"}
+    assert {c["key"] for c in missing} == {"respiration", "vo2max"}
     assert s["value"] == round(s["earned"] / s["available"] * 100)
 
 
@@ -62,8 +62,15 @@ def test_poor_recovery_scores_low_and_flags_components():
     res = scoring.compute(TODAY, healthy_days(hrv=40, sleep_score=42, rhr=58), runs(), {}, 60)
     by_key = {c["key"]: c for c in res["components"]}
     assert by_key["hrv"]["status"] == "bad" and by_key["sleep"]["status"] == "bad"
-    assert by_key["recovery"]["points"] <= 1
     assert res["score"]["value"] < 55
+
+
+def test_recovery_time_switched_off():
+    res = scoring.compute(TODAY, healthy_days(), runs(), {}, 60)
+    keys = {c["key"] for c in res["components"]}
+    assert ("recovery" in keys) == scoring.USE_RECOVERY_TIME
+    if not scoring.USE_RECOVERY_TIME:
+        assert scoring.TOTAL_POINTS == 88 and res["score"]["total"] == 88
 
 
 def test_ewma_acwr_spike():

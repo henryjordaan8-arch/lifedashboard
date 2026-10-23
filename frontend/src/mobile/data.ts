@@ -32,7 +32,6 @@ interface Cache {
   syncedUntil: string | null;
   syncedFrom: string | null;
   lastSync: string | null; // ISO timestamp
-  activityFields?: number;
 }
 
 const empty = (): Cache => ({
@@ -40,14 +39,9 @@ const empty = (): Cache => ({
   extras: { predictions: [], threshold: [], shoes: [], ftp: [], weight: [] },
 });
 
-// Bump when activities gain a field: the next sync re-downloads them (sleep etc. are kept).
-const ACTIVITY_FIELDS_VERSION = 2; // 2: Garmin's training-effect label
-
 function read(): Cache {
   try {
-    const c: Cache = { ...empty(), ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
-    if (c.activityFields !== ACTIVITY_FIELDS_VERSION) c.syncedUntil = null;
-    return c;
+    return { ...empty(), ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
   } catch {
     return empty();
   }
@@ -262,7 +256,6 @@ async function doSync(): Promise<void> {
     syncedUntil: end,
     syncedFrom: want,
     lastSync: new Date().toISOString(),
-    activityFields: ACTIVITY_FIELDS_VERSION,
   };
   localStorage.setItem(KEY, JSON.stringify(cache));
 }

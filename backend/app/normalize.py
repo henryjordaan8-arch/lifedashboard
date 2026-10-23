@@ -182,8 +182,6 @@ def activity(raw: dict[str, Any]) -> dict[str, Any] | None:
         "training_load": _num(raw.get("activityTrainingLoad")),
         "aerobic_te": _num(raw.get("aerobicTrainingEffect")),
         "anaerobic_te": _num(raw.get("anaerobicTrainingEffect")),
-        # Garmin's "primary benefit", e.g. AEROBIC_BASE, TEMPO, LACTATE_THRESHOLD, VO2MAX
-        "te_label": raw.get("trainingEffectLabel"),
         # --- sport detail (all optional; depends on sport, device and sensors) ---
         "moving_s": _int(raw.get("movingDuration")),
         "avg_speed_ms": _num(raw.get("averageSpeed")),

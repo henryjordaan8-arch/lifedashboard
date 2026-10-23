@@ -65,7 +65,6 @@ export function normalizeActivity(raw: Raw): Act | null {
     training_load: num(raw.activityTrainingLoad),
     aerobic_te: num(raw.aerobicTrainingEffect),
     anaerobic_te: num(raw.anaerobicTrainingEffect),
-    te_label: (raw.trainingEffectLabel as string | undefined) ?? null,
     moving_s: int(raw.movingDuration),
     avg_speed_ms: num(raw.averageSpeed),
     max_speed_ms: num(raw.maxSpeed),

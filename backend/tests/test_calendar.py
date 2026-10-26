@@ -87,3 +87,15 @@ def test_key_sessions_are_quality_run_and_bike_work():
 def test_is_call():
     assert is_call("Client call", ["call"]) and is_call("Calls with team", ["call"])
     assert not is_call("Recall review", ["call"]) and not is_call("Callisthenics", ["call"])
+
+
+def test_activity_key_by_title_or_garmin_effect():
+    from app.calendar_feed import activity_key
+
+    run = {"name": "Pretoria Running", "sport": "run", "te_label": "AEROBIC_BASE", "anaerobic_te": 0.8}
+    assert activity_key(run) is None  # an easy run stays base
+    assert activity_key({**run, "te_label": "VO2MAX"}) == "VO₂ max (Garmin)"
+    assert activity_key({**run, "te_label": "TEMPO"}) == "Tempo (Garmin)"
+    assert activity_key({**run, "anaerobic_te": 3.2}) == "Hard anaerobic effect (Garmin)"
+    assert activity_key({**run, "name": "Tempo 6 km"}) == "Tempo run"  # the title still wins
+    assert activity_key({"name": "Pool", "sport": "swim", "te_label": "VO2MAX"}) is None

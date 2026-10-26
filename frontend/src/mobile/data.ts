@@ -8,7 +8,7 @@ import type { SportData, SportKey } from "../types";
 import { garminGet } from "./garmin";
 import * as normalize from "./normalize";
 import type { DayData } from "./readiness";
-import { addDaysIso, type Extras, keyReason, normalizeActivity, normalizeVo2, sessionMetrics, sportView } from "./sport";
+import { activityKey, addDaysIso, type Extras, normalizeActivity, normalizeVo2, sessionMetrics, sportView } from "./sport";
 
 export const HISTORY_DAYS = 365;
 const DAILY_DAYS = 91; // readiness baselines need ~2 months of nights
@@ -33,6 +33,7 @@ interface Cache {
   syncedUntil: string | null;
   syncedFrom: string | null;
   lastSync: string | null; // ISO timestamp
+  activityFields?: number;
 }
 
 const empty = (): Cache => ({
@@ -40,9 +41,14 @@ const empty = (): Cache => ({
   extras: { predictions: [], threshold: [], shoes: [], ftp: [], weight: [] },
 });
 
+// Bump when activities gain a field: the next sync re-downloads them (sleep etc. are kept).
+const ACTIVITY_FIELDS_VERSION = 2; // 2: Garmin's training-effect label (key sessions)
+
 function read(): Cache {
   try {
-    return { ...empty(), ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
+    const c: Cache = { ...empty(), ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
+    if (c.activityFields !== ACTIVITY_FIELDS_VERSION) c.syncedUntil = null;
+    return c;
   } catch {
     return empty();
   }
@@ -274,6 +280,7 @@ async function doSync(): Promise<void> {
     syncedUntil: end,
     syncedFrom: want,
     lastSync: new Date().toISOString(),
+    activityFields: ACTIVITY_FIELDS_VERSION,
   };
   localStorage.setItem(KEY, JSON.stringify(cache));
 }
@@ -305,7 +312,7 @@ export function sportData(sport: SportKey, days: number): SportData {
   return {
     ...view,
     latest: latest
-      ? { session: { ...latest, metrics: sessionMetrics(latest), key: keyReason(latest.name, sport) } as SportData["sessions"][number],
+      ? { session: { ...latest, metrics: sessionMetrics(latest), key: activityKey(latest) } as SportData["sessions"][number],
           laps: cache.laps?.[latest.id] ?? [] }
       : null,
   };

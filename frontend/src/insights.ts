@@ -3,7 +3,7 @@
  * same against the backend, the GitHub Pages snapshot and the phone app.
  */
 import { addDays, isoDay, parseDay } from "./format";
-import { keyReason } from "./mobile/sport";
+import { activityKey } from "./mobile/sport";
 import type { Activity, SleepNight } from "./types";
 
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -79,7 +79,7 @@ export function goodDayInsights(nights: SleepNight[], activities: Activity[]): I
   };
 
   const steady = activities
-    .filter((a) => (a.sport === "run" || a.sport === "ride") && !keyReason(a.name, a.sport))
+    .filter((a) => (a.sport === "run" || a.sport === "ride") && !activityKey(a))
     .map((a) => ({ a, eff: efficiency(a) }))
     .filter((x): x is { a: Activity; eff: number } => x.eff != null);
 

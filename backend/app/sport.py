@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from statistics import fmean, median
 from typing import Any
 
-from .calendar_feed import key_reason
+from .calendar_feed import activity_key
 
 SPORTS = ("run", "ride", "swim")
 
@@ -300,7 +300,7 @@ def sport_view(
     history = sorted((a for a in all_activities if a["sport"] == sport), key=lambda a: a["start"])
     for a in history:
         a["metrics"] = derived(a)
-        a["key"] = key_reason(a["name"], "training", sport, key_keywords)
+        a["key"] = activity_key(a, key_keywords)
     period = [a for a in history if start.isoformat() <= a["date"] <= end.isoformat()]
     span = (end - start).days + 1
     prev_start, prev_end = start - timedelta(days=span), start - timedelta(days=1)

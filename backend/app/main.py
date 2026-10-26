@@ -326,7 +326,7 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
             return None
         a = dict(max(mine, key=lambda x: x["start"]))
         a["metrics"] = sport.derived(a)
-        a["key"] = calendar_feed.key_reason(a["name"], "training", name, cfg.key_session_keywords)
+        a["key"] = calendar_feed.activity_key(a, cfg.key_session_keywords)
         return {"session": a, "laps": normalize.laps(store.get_one("splits", str(a["id"])), name)}
 
     def sport_extras(name: str) -> dict[str, Any]:
@@ -371,7 +371,7 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
         # EWMA load needs ~4 months of activities; VO2 max trend ~2 months.
         acts = activities_between((today - timedelta(days=120)).isoformat(), end)
         for a in acts:
-            a["key"] = calendar_feed.key_reason(a["name"], "training", a["sport"], cfg.key_session_keywords)
+            a["key"] = calendar_feed.activity_key(a, cfg.key_session_keywords)
             if a["sport"] in ("run", "ride"):
                 a["decoupling"] = normalize.decoupling(store.get_one("splits", str(a["id"])), a["sport"])
         garmin_today = normalize.readiness(end, store.get_daily("readiness", end, end).get(end))

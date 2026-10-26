@@ -35,7 +35,7 @@ A personal desktop dashboard for Garmin data, training, work and study.
   - Cycling: average power, aerobic efficiency (normalised watts per heartbeat) and VO₂ max.
   - Swimming: pace per 100 m, SWOLF and stroke rate.
 
-  Key and base sessions get separate average lines, because a VO₂ session is faster than an easy run by design. The "% better" figure compares the first and last 4 weeks of the range, using base sessions when there are enough of them.
+  A recorded session counts as **key** when its title says so (tempo, VO₂, intervals, sweet spot, ★…) or when Garmin rates it as quality work: primary benefit Tempo, Threshold, VO₂ max, Anaerobic or Sprint, or an anaerobic training effect of 3.0+. Swims and gym sessions are never key. Key and base sessions get separate average lines, because a VO₂ session is faster than an easy run by design. The "% better" figure compares the first and last 4 weeks of the range, using base sessions when there are enough of them.
 - **Extra boxes**:
   - **Running**
     - *Pace at easy heart rate*: easy runs scaled to your typical easy heart rate. It's the clearest sign your aerobic base is improving.

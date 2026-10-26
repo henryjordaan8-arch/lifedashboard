@@ -4,7 +4,7 @@
  */
 import type { Alert, Readiness, ScoreComponent } from "../types";
 import type { GarminReadiness, Hrv, Night, Stats } from "./normalize";
-import { addDaysIso, keyReason } from "./sport";
+import { activityKey, addDaysIso } from "./sport";
 
 type Act = Record<string, any>;
 type Band = [number, number, number, number];
@@ -62,7 +62,7 @@ function dailyValues(d: DayData | undefined): Record<string, number | null> {
 
 const HARD = { load: 150, aerobic_te: 4.0, anaerobic_te: 3.0 };
 const isHard = (a: Act) =>
-  !!keyReason(a.name ?? "", a.sport) ||
+  !!activityKey(a) ||
   (a.training_load ?? 0) >= HARD.load || (a.aerobic_te ?? 0) >= HARD.aerobic_te || (a.anaerobic_te ?? 0) >= HARD.anaerobic_te;
 
 function trainingLoad(acts: Act[], today: string) {
@@ -351,7 +351,7 @@ export function buildReadiness(
 ): Readiness {
   const acts = activities
     .filter((a) => a.date >= addDaysIso(today, -120) && a.date <= today)
-    .map((a) => ({ ...a, key: keyReason(a.name, a.sport) }));
+    .map((a) => ({ ...a, key: activityKey(a) }));
 
   const days = daysBack(today, BASELINE_DAYS + 1);
   const values = Object.fromEntries(days.map((d) => [d, dailyValues(daily[d])]));

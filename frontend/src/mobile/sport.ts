@@ -65,6 +65,7 @@ export function normalizeActivity(raw: Raw): Act | null {
     training_load: num(raw.activityTrainingLoad),
     aerobic_te: num(raw.aerobicTrainingEffect),
     anaerobic_te: num(raw.anaerobicTrainingEffect),
+    te_label: (raw.trainingEffectLabel as string | undefined) ?? null,
     moving_s: int(raw.movingDuration),
     avg_speed_ms: num(raw.averageSpeed),
     max_speed_ms: num(raw.maxSpeed),
@@ -125,6 +126,20 @@ export function keyReason(title: string, sport: string | null): string | null {
   const text = title.toLowerCase();
   for (const [re, run, ride] of KEY_RULES) if (re.test(text)) return sport === "ride" ? ride : run;
   return null;
+}
+
+const GARMIN_KEY_LABELS: Record<string, string> = {
+  TEMPO: "Tempo", LACTATE_THRESHOLD: "Threshold", VO2MAX: "VO₂ max", ANAEROBIC_CAPACITY: "Anaerobic", SPEED: "Sprint",
+};
+
+/** Why a recorded session is key: its title, or Garmin rating it as quality work (see activity_key). */
+export function activityKey(a: Act): string | null {
+  const byTitle = keyReason(a.name ?? "", a.sport);
+  if (byTitle) return byTitle;
+  if (a.sport === "swim" || a.sport === "strength") return null;
+  const label = GARMIN_KEY_LABELS[a.te_label ?? ""];
+  if (label) return `${label} (Garmin)`;
+  return (a.anaerobic_te ?? 0) >= 3.0 ? "Hard anaerobic effect (Garmin)" : null;
 }
 
 // ---------- sport.py ----------
@@ -398,7 +413,7 @@ export function sportView(
     .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
   for (const a of history) {
     a.metrics = sessionMetrics(a);
-    a.key = keyReason(a.name, sport);
+    a.key = activityKey(a);
   }
   const period = history.filter((a) => start <= a.date && a.date <= end);
   const span = daysBetween(start, end) + 1;

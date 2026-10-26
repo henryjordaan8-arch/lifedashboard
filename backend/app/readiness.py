@@ -49,9 +49,9 @@ HARD_SESSION = {"load": 150, "aerobic_te": 4.0, "anaerobic_te": 3.0}
 
 def is_hard(a: dict) -> bool:
     """A quality (key) session by name, or one Garmin rates as hard."""
-    from .calendar_feed import key_reason
+    from .calendar_feed import activity_key
 
-    if key_reason(a.get("name") or "", "training", a.get("sport")):
+    if activity_key(a):
         return True
     return (
         (a.get("training_load") or 0) >= HARD_SESSION["load"]

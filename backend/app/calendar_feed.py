@@ -106,6 +106,29 @@ def key_reason(title: str, category: str, sport: str | None, keywords: list[str]
     return None
 
 
+# Garmin's primary benefit for sessions that are quality work, whatever their title.
+GARMIN_KEY_LABELS = {
+    "TEMPO": "Tempo", "LACTATE_THRESHOLD": "Threshold", "VO2MAX": "VO₂ max",
+    "ANAEROBIC_CAPACITY": "Anaerobic", "SPEED": "Sprint",
+}
+GARMIN_KEY_ANAEROBIC_TE = 3.0
+
+
+def activity_key(a: dict, keywords: list[str] | None = None) -> str | None:
+    """Why a recorded session counts as key: its title (like planned sessions), or else
+    Garmin rating it as quality work (primary benefit, or a high anaerobic effect).
+    Swims and gym sessions are never key."""
+    if reason := key_reason(a.get("name") or "", "training", a.get("sport"), keywords):
+        return reason
+    if a.get("sport") in ("swim", "strength"):
+        return None
+    if label := GARMIN_KEY_LABELS.get(a.get("te_label") or ""):
+        return f"{label} (Garmin)"
+    if (a.get("anaerobic_te") or 0) >= GARMIN_KEY_ANAEROBIC_TE:
+        return "Hard anaerobic effect (Garmin)"
+    return None
+
+
 def parse_events(
     ics_text: str,
     start: datetime,

@@ -186,7 +186,14 @@ def main() -> int:
     )):
         say("No Google Calendar link in backend/.env yet: the Today view and Upcoming will be empty.")
 
-    backend_env = dict(os.environ, **({"DEMO_MODE": "true"} if args.demo else {}))
+    # A built copy of the page (frontend/dist) is only for Docker and GitHub Pages, which build
+    # their own. Left in this folder (e.g. copied across from an older download), the backend
+    # would serve that stale page on port 8000, so remove it; the dashboard runs from source.
+    for stale in (FRONTEND / "dist", FRONTEND / "dist-app"):
+        if stale.is_dir():
+            shutil.rmtree(stale, ignore_errors=True)
+            say(f"Removed an old built copy of the dashboard ({stale.relative_to(ROOT)}).")
+    backend_env = dict(os.environ, FRONTEND_DEV_URL=URL, **({"DEMO_MODE": "true"} if args.demo else {}))
     # An old copy still running would silently answer instead of this one.
     busy = [p for p in (BACKEND_PORT, FRONTEND_PORT) if port_in_use(p)]
     if busy:

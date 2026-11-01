@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import threading
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -419,6 +420,11 @@ def create_app(cfg: Settings = default_settings, store: Store | None = None) -> 
             if path and file.is_file() and dist.resolve() in file.parents:
                 return FileResponse(file)
             return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
+    elif dev_url := os.getenv("FRONTEND_DEV_URL"):
+        # Run by start.py: the dashboard is the Vite dev server, so send stray visits there.
+        @app.get("/", include_in_schema=False)
+        def to_dashboard() -> RedirectResponse:
+            return RedirectResponse(dev_url)
 
     return app
 

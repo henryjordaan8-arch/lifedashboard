@@ -87,6 +87,9 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
     }
   };
 
+  // The page and the backend come from the same download; a mismatch means an old page is open.
+  const stale = !APP && !STATIC && !!status?.version && status.version !== "unknown"
+    && __APP_VERSION__ !== "dev" && status.version !== __APP_VERSION__;
   const pillClass = status?.last_error ? "pill err" : status?.mode === "demo" ? "pill demo" : "pill";
   const pillText = status?.last_error
     ? "Sync failed"
@@ -142,6 +145,13 @@ export function App({ onSignOut }: { onSignOut?: (() => void) | null }) {
         <Suspense fallback={null}>
           <CalendarSettings onClose={() => (setCalendarOpen(false), load())} />
         </Suspense>
+      )}
+      {stale && (
+        <div className="card stale-banner" role="alert">
+          <b>This page is out of date</b> (version {__APP_VERSION__}, but the dashboard running is {status?.version}).
+          Close any other dashboard windows, start it again from the newest folder and open{" "}
+          <a href="http://localhost:5173">localhost:5173</a>, then reload this page.
+        </div>
       )}
       {error && <div className="card" style={{ marginBottom: 20, color: "var(--bad)" }}>Can't reach the backend: {error}</div>}
       {status?.last_error && (

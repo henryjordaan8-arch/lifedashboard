@@ -1,9 +1,13 @@
 /* Baseline client dashboard: prototype with demo data.
  *
- * Every card is a module in MODULES. Which modules a client sees, and their targets,
- * live in a per-client config ({ modules: [...ids], targets: {...} }). In this prototype
- * the config is saved in the browser; in the real product it would be stored on the
- * server and edited only by the doctor.
+ * The app runs on the client's own device and reads their wearable there, so no
+ * server ever holds their health data. Blood results are never shown in the app;
+ * they are discussed on video calls.
+ *
+ * Every card is a module in MODULES. The doctor builds a "protocol" for each client:
+ * which modules they see, their targets, the monthly focus and the next call date.
+ * A protocol contains no health data. The doctor exports it as a code, and the client
+ * imports it into the app on their phone (Configure → Import protocol).
  */
 (() => {
   "use strict";
@@ -53,23 +57,10 @@
     steps: series(7, 8400, 120, 2200).map(Math.round),
     supplements: [
       { name: "Creatine monohydrate", dose: "5 g", when: "Any time", grade: "A", why: "Strength, lean mass", taken: 7 },
-      { name: "Vitamin D3", dose: "2,000 IU", when: "With breakfast", grade: "B", why: "25-OH D was 52 nmol/L", taken: 6 },
+      { name: "Vitamin D3", dose: "2,000 IU", when: "With breakfast", grade: "B", why: "As agreed on your last call", taken: 6 },
       { name: "Omega-3 (EPA+DHA)", dose: "2 g", when: "With dinner", grade: "B", why: "Low oily-fish intake", taken: 5 },
       { name: "Magnesium glycinate", dose: "300 mg", when: "Before bed", grade: "C", why: "Trial for sleep, review in 8 wk", taken: 4 },
     ],
-    bloods: [
-      { name: "ApoB", unit: "g/L", v: 0.92, prev: 1.08, lo: 0.5, hi: 1.3, optLo: 0.5, optHi: 0.9, lower: true },
-      { name: "Lp(a)", unit: "nmol/L", v: 38, prev: null, lo: 0, hi: 200, optLo: 0, optHi: 75, lower: true, once: true },
-      { name: "HbA1c", unit: "%", v: 5.4, prev: 5.6, lo: 4.0, hi: 6.5, optLo: 4.0, optHi: 5.6, lower: true },
-      { name: "Fasting insulin", unit: "mIU/L", v: 7.2, prev: 9.8, lo: 2, hi: 25, optLo: 2, optHi: 8, lower: true },
-      { name: "hs-CRP", unit: "mg/L", v: 0.9, prev: 1.6, lo: 0, hi: 5, optLo: 0, optHi: 1, lower: true },
-      { name: "Ferritin", unit: "µg/L", v: 112, prev: 96, lo: 20, hi: 400, optLo: 70, optHi: 250 },
-      { name: "Vitamin D (25-OH)", unit: "nmol/L", v: 84, prev: 52, lo: 25, hi: 200, optLo: 75, optHi: 150 },
-      { name: "Testosterone", unit: "nmol/L", v: 19.4, prev: 17.1, lo: 8, hi: 35, optLo: 15, optHi: 30 },
-      { name: "TSH", unit: "mIU/L", v: 1.8, prev: 2.0, lo: 0.4, hi: 4.5, optLo: 0.5, optHi: 2.5 },
-    ],
-    bloodsDate: "2026-09-14",
-    nextBloods: "2026-12-07",
   };
 
   // ---------- Modules ----------
@@ -82,7 +73,6 @@
     ["cardio", "Cardio"],
     ["nutrition", "Nutrition"],
     ["supplements", "Supplements"],
-    ["bloodwork", "Bloodwork"],
   ];
 
   const DEFAULT_TARGETS = {
@@ -95,6 +85,8 @@
     alcoholCap: 7,
     setsMin: 10,
     setsMax: 20,
+    nextCall: "2026-11-12T07:30",
+    nextBloods: "2026-12-07",
   };
 
   const TARGET_FIELDS = [
@@ -107,11 +99,14 @@
     ["alcoholCap", "Alcohol cap (units/week)", "number", 1],
     ["setsMin", "Sets per muscle, min", "number", 1],
     ["setsMax", "Sets per muscle, max", "number", 1],
+    ["nextCall", "Next video call", "datetime-local"],
+    ["nextBloods", "Next blood test due", "date"],
   ];
 
   const MODULES = [
     { id: "focus", domain: "overview", title: "Doctor's focus", desc: "Your three priorities this month", wide: true, render: renderFocus },
     { id: "checklist", domain: "overview", title: "This week", desc: "Checklist that ticks itself", render: renderChecklist },
+    { id: "nextup", domain: "overview", title: "Next steps", desc: "Your next call and blood test", render: renderNextUp },
     { id: "readiness", domain: "recovery", title: "Readiness", desc: "Daily score from HRV, sleep, RHR, load", render: renderReadiness },
     { id: "hrv", domain: "recovery", title: "HRV", desc: "Overnight HRV vs personal baseline", render: renderHrv },
     { id: "rhr", domain: "recovery", title: "Resting heart rate", desc: "30-day trend", render: renderRhr },
@@ -130,14 +125,13 @@
     { id: "bodycomp", domain: "nutrition", title: "Body composition", desc: "Weight and body fat trend", render: renderBodyComp },
     { id: "alcohol", domain: "nutrition", title: "Alcohol", desc: "Units per week vs cap", render: renderAlcohol },
     { id: "supplements", domain: "supplements", title: "Supplement protocol", desc: "Dose, timing, evidence, adherence", wide: true, render: renderSupplements },
-    { id: "bloodwork", domain: "bloodwork", title: "Bloodwork", desc: "Latest results vs range, next test", wide: true, render: renderBloods },
   ];
 
   const PRESETS = {
-    "Executive essentials": ["focus", "checklist", "readiness", "sleep_duration", "sleep_consistency", "caffeine", "zone2", "protein", "alcohol", "supplements", "bloodwork"],
-    "Endurance": ["focus", "checklist", "readiness", "hrv", "rhr", "sleep_duration", "zone2", "intensity", "vo2max", "load", "protein", "bodycomp", "supplements", "bloodwork"],
-    "Strength and body comp": ["focus", "checklist", "readiness", "sleep_duration", "lifts", "sets", "protein", "bodycomp", "alcohol", "supplements", "bloodwork"],
-    "Sleep reset": ["focus", "checklist", "hrv", "rhr", "stress", "sleep_duration", "sleep_consistency", "sleep_stages", "caffeine", "alcohol"],
+    "Executive essentials": ["focus", "checklist", "nextup", "readiness", "sleep_duration", "sleep_consistency", "caffeine", "zone2", "protein", "alcohol", "supplements"],
+    "Endurance": ["focus", "checklist", "nextup", "readiness", "hrv", "rhr", "sleep_duration", "zone2", "intensity", "vo2max", "load", "protein", "bodycomp", "supplements"],
+    "Strength and body comp": ["focus", "checklist", "nextup", "readiness", "sleep_duration", "lifts", "sets", "protein", "bodycomp", "alcohol", "supplements"],
+    "Sleep reset": ["focus", "checklist", "nextup", "hrv", "rhr", "stress", "sleep_duration", "sleep_consistency", "sleep_stages", "caffeine", "alcohol"],
     "Everything": MODULES.map((m) => m.id),
   };
 
@@ -150,7 +144,7 @@
     { id: "b", name: "Client B", role: "Surgeon, 39, marathon in March", preset: "Endurance", focus: [
       ["Keep 80% of training easy", "Hard days are Tuesday intervals and Saturday long-run finish only."],
       ["Ramp mileage ≤ 10% a week", "Post-call days are rest or 30 min easy."],
-      ["Ferritin above 100", "Continue iron with vitamin C on alternate days; recheck in December."],
+      ["Iron on alternate days", "With vitamin C and away from coffee, as agreed on our last call."],
     ] },
     { id: "c", name: "Client C", role: "Founder, 52", preset: "Strength and body comp", focus: [
       ["Protein 1.8 g/kg every day", "Front-load it: 40 g at breakfast makes the target easy."],
@@ -174,6 +168,7 @@
     const c = client();
     if (!store[c.id]) store[c.id] = { modules: [...PRESETS[c.preset]], targets: { ...DEFAULT_TARGETS } };
     store[c.id].targets = { ...DEFAULT_TARGETS, ...store[c.id].targets };
+    if (!Array.isArray(store[c.id].focus)) store[c.id].focus = c.focus.map((f) => [...f]);
     return store[c.id];
   }
   const T = () => cfg().targets;
@@ -236,8 +231,30 @@
 
   // ---------- Renderers ----------
   function renderFocus(m) {
-    const items = client().focus.map(([b, s]) => `<li><div><b>${esc(b)}</b><span>${esc(s)}</span></div></li>`).join("");
-    return card(m, `<ol class="focus">${items}</ol><p class="sig">Updated at your last review · next review Thursday</p>`);
+    const items = cfg().focus.filter(([b]) => b.trim()).map(([b, s]) => `<li><div><b>${esc(b)}</b><span>${esc(s)}</span></div></li>`).join("");
+    return card(m, `<ol class="focus">${items}</ol><p class="sig">Set by your doctor at your last call · next call ${esc(fmtCall(T().nextCall))}</p>`);
+  }
+
+  function fmtCall(v) {
+    const d = new Date(v);
+    if (isNaN(d)) return "not booked";
+    return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function daysUntil(v) {
+    const d = new Date(v);
+    return isNaN(d) ? null : Math.ceil((d.setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000);
+  }
+
+  function renderNextUp(m) {
+    const t = T(), dc = daysUntil(t.nextCall), db = daysUntil(t.nextBloods);
+    const when = (n) => (n == null ? "" : n < 0 ? "overdue" : n === 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} days`);
+    const bd = new Date(t.nextBloods + "T00:00:00");
+    const bloods = isNaN(bd) ? "not scheduled" : bd.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    return card(m, `<ul class="checks">
+      <li><span class="dot-k"></span><span>Video call<br><span class="muted">${esc(fmtCall(t.nextCall))}</span></span><span class="muted">${when(dc)}</span></li>
+      <li><span class="dot-k"></span><span>Blood test at your lab<br><span class="muted">${esc(bloods)} · fasting, before 09:00</span></span><span class="${db != null && db <= 7 ? "warn" : "muted"}">${when(db)}</span></li>
+    </ul><p class="note">Blood results aren't stored in this app. We go through them together on your call.</p>`);
   }
 
   function renderChecklist(m) {
@@ -420,26 +437,7 @@
       const p = Math.round((s.taken / 7) * 100), cls = p >= 85 ? "good" : p >= 60 ? "warn" : "bad";
       return `<tr><td><b style="font-weight:500">${esc(s.name)}</b><br><span class="muted">${esc(s.why)}</span></td><td>${esc(s.dose)}</td><td>${esc(s.when)}</td><td><span class="pill" title="Evidence grade">${esc(s.grade)}</span></td><td class="num ${cls}">${s.taken}/7</td></tr>`;
     }).join("");
-    return card(m, `<div class="table-scroll"><table><thead><tr><th>Supplement</th><th>Dose</th><th>When</th><th>Evidence</th><th class="num">Taken</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Evidence: A strong · B moderate · C trial, review at next bloods. Third-party-tested brands only.</p>`);
-  }
-
-  function renderBloods(m) {
-    const rows = DATA.bloods.map((b) => {
-      const span = b.hi - b.lo, pos = (v) => Math.max(0, Math.min(100, ((v - b.lo) / span) * 100));
-      const inOpt = b.v >= b.optLo && b.v <= b.optHi;
-      const inRef = b.v >= b.lo && b.v <= b.hi;
-      const cls = inOpt ? "good" : inRef ? "warn" : "bad";
-      const word = inOpt ? "Optimal" : inRef ? "In range" : "Out of range";
-      let trend = "";
-      if (b.prev != null) {
-        const better = b.lower ? b.v < b.prev : Math.abs(b.v - (b.optLo + b.optHi) / 2) < Math.abs(b.prev - (b.optLo + b.optHi) / 2);
-        trend = `<span class="${better ? "good" : "warn"}">${b.v > b.prev ? "↑" : "↓"} from ${b.prev}</span>`;
-      } else trend = `<span class="muted">${b.once ? "once-off test" : "first test"}</span>`;
-      const bar = `<div class="range"><div class="opt" style="left:${pos(b.optLo)}%;width:${pos(b.optHi) - pos(b.optLo)}%"></div>${b.prev != null ? `<div class="prev" style="left:${pos(b.prev)}%"></div>` : ""}<div class="mark" style="left:${pos(b.v)}%"></div></div>`;
-      return `<tr><td>${esc(b.name)}</td><td class="num">${b.v} <span class="muted">${esc(b.unit)}</span></td><td style="width:28%">${bar}</td><td>${trend}</td><td><span class="pill ${cls}">${word}</span></td></tr>`;
-    }).join("");
-    const d = (s) => new Date(s + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-    return card(m, `<div class="table-scroll"><table><thead><tr><th>Marker</th><th class="num">Result</th><th>Range · <span style="color:var(--good)">target</span></th><th>Trend</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Last drawn ${d(DATA.bloodsDate)} · next due <b>${d(DATA.nextBloods)}</b>. Targets are set by your doctor for you and may differ from the lab's reference range.</p>`);
+    return card(m, `<div class="table-scroll"><table><thead><tr><th>Supplement</th><th>Dose</th><th>When</th><th>Evidence</th><th class="num">Taken</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Evidence: A strong · B moderate · C trial, review at your next call. Third-party-tested brands only. Baseline never sells supplements.</p>`);
   }
 
   // ---------- Page ----------
@@ -450,7 +448,7 @@
     const c = client();
     $("greeting").textContent = `${c.name} · ${c.role}`;
     $("today").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-    $("intro-note").textContent = `${on.size} of ${MODULES.length} modules switched on for this client. Your doctor chooses them to match your goals.`;
+    $("intro-note").textContent = `${on.size} of ${MODULES.length} modules, chosen by your doctor to match your goals. Your data stays on this device.`;
     // One dense grid, in domain order, so a domain with a single card leaves no gap.
     const mods = DOMAINS.flatMap(([dom]) => MODULES.filter((m) => m.domain === dom && on.has(m.id)));
     $("dash").innerHTML = mods.length ? `<div class="grid">${mods.map((m) => m.render(m)).join("")}</div>` : "";
@@ -467,7 +465,13 @@
       return `<div class="mod-group"><p>${esc(label)}</p>${items}</div>`;
     }).join("");
     $("targets").innerHTML = TARGET_FIELDS.map(([k, label, type, step]) =>
-      `<label>${esc(label)}<input type="${type}" data-target="${k}" value="${esc(conf.targets[k])}" ${step ? `step="${step}"` : ""}/></label>`).join("");
+      `<label class="${type.startsWith("date") ? "span2" : ""}">${esc(label)}<input id="t-${k}" type="${type}" data-target="${k}" value="${esc(conf.targets[k])}" ${step ? `step="${step}"` : ""}/></label>`).join("");
+    $("focus-edit").innerHTML = [0, 1, 2].map((i) => {
+      const [b, s] = conf.focus[i] || ["", ""];
+      return `<div class="focus-row"><span>0${i + 1}</span><input id="f-${i}-0" data-focus="${i}" data-part="0" placeholder="Priority" value="${esc(b)}"/><input id="f-${i}-1" data-focus="${i}" data-part="1" placeholder="How, in one line" value="${esc(s)}"/></div>`;
+    }).join("");
+    $("export-code").value = "";
+    $("import-msg").textContent = "";
   }
 
   function update() { saveStore(); renderDash(); renderConfig(); }
@@ -510,6 +514,46 @@
     if (e.target.type === "number" && !(val > 0)) { e.target.value = cfg().targets[k]; return; }
     cfg().targets[k] = val;
     saveStore(); renderDash();
+  });
+
+
+  $("focus-edit").addEventListener("input", (e) => {
+    const i = e.target.dataset.focus;
+    if (i == null) return;
+    const conf = cfg();
+    while (conf.focus.length < 3) conf.focus.push(["", ""]);
+    conf.focus[+i][+e.target.dataset.part] = e.target.value;
+    saveStore(); renderDash();
+  });
+
+  // Protocol code: modules, targets and focus only. Never health data.
+  const encode = (obj) => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(obj))));
+  const decode = (code) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(code.trim()), (c) => c.charCodeAt(0))));
+
+  $("export").addEventListener("click", async () => {
+    const conf = cfg();
+    const code = encode({ v: 1, modules: conf.modules, targets: conf.targets, focus: conf.focus });
+    const box = $("export-code");
+    box.value = code;
+    try { await navigator.clipboard.writeText(code); $("import-msg").textContent = "Protocol code copied. Send it to your client."; }
+    catch { box.focus(); box.select(); $("import-msg").textContent = "Select the code above and copy it."; }
+  });
+
+  $("import").addEventListener("click", () => {
+    const msg = $("import-msg");
+    try {
+      const p = decode($("export-code").value);
+      if (p.v !== 1 || !Array.isArray(p.modules)) throw new Error();
+      const known = new Set(MODULES.map((m) => m.id));
+      const conf = cfg();
+      conf.modules = p.modules.filter((id) => known.has(id));
+      conf.targets = { ...DEFAULT_TARGETS, ...p.targets };
+      if (Array.isArray(p.focus)) conf.focus = p.focus.slice(0, 3).map((f) => [String(f[0] || ""), String(f[1] || "")]);
+      update();
+      $("import-msg").textContent = "Protocol imported.";
+    } catch {
+      msg.textContent = "That code isn't a valid protocol. Paste the whole code your doctor sent.";
+    }
   });
 
   document.title = `${BRAND} Client Dashboard`;

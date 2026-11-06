@@ -22,7 +22,7 @@
       </label>
     </div>
     <div class="top-right">
-      <span class="demo-tag">Demo data</span>
+      <span class="demo-tag">Demo data · on this device</span>
       <button id="open-config" class="btn">Configure</button>
     </div>
   </header>
@@ -56,8 +56,20 @@
       <h3>Modules <span class="count" id="count"></span></h3>
       <div id="module-list"></div>
 
-      <h3>Targets for this client</h3>
+      <h3>Doctor's focus this month</h3>
+      <div id="focus-edit"></div>
+
+      <h3>Targets and dates</h3>
       <div class="targets" id="targets"></div>
+
+      <h3>Share protocol</h3>
+      <p class="help">The protocol holds only the modules, targets, focus and dates above. It never contains health data. Copy the code and send it to your client, who pastes it here in the app on their phone and taps Import.</p>
+      <textarea id="export-code" rows="3" placeholder="Protocol code" spellcheck="false"></textarea>
+      <div class="share-row">
+        <button class="btn" id="export" type="button">Copy protocol code</button>
+        <button class="btn ghost" id="import" type="button">Import</button>
+      </div>
+      <p class="help" id="import-msg" role="status"></p>
     </div>
     <div class="drawer-foot">
       <button class="btn ghost" id="reset">Reset client</button>

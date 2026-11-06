@@ -33,6 +33,7 @@ These are fixed decisions, and the rest of the plan follows from them.
 | **Client** | 35–60, time-poor, used to paying for expertise. Wants to stay sharp, fit and healthy over the long term. Often already wears a Garmin, Whoop, Oura or Apple Watch and isn't sure what the data means. |
 | **Problem** | Advice is split between a GP, a personal trainer, a dietitian, podcasts and a wearable app, and none of them talk to each other. Nobody owns the whole plan. |
 | **Promise** | One doctor and one plan, reviewed on video every month or more. You spend under 30 minutes a week on admin, with no travel or waiting rooms. |
+| **Who runs it** | A medical doctor and lifelong fitness enthusiast with 10+ years of endurance sport and strength training, who uses the same methods personally. Say this factually on the site; HPCSA rules allow facts, not superiority claims. |
 | **Edge over coaches** | Medical training: you read bloodwork, spot red flags, know when to send someone to their GP or a specialist, and know where the evidence actually is. |
 | **Edge over longevity clinics** | Personal and continuous instead of a one-off scan package. No product sales, so the advice is independent. |
 | **Privacy** | Health data stays on the client's phone. For a CEO, "we hold none of your health data" is a selling point. |

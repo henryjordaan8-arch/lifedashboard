@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Baseline Performance Medicine</title>
+  <meta name="description" content="Doctor-led optimisation of training, nutrition, sleep, caffeine, recovery and supplements for busy people." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Jost:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- Reusable geometric icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-strength" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+      <rect x="3" y="10" width="5" height="12" /><rect x="24" y="10" width="5" height="12" /><path d="M8 16h16" /><path d="M1 13v6M31 13v6" />
+    </symbol>
+    <symbol id="i-cardio" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+      <circle cx="16" cy="16" r="13" /><path d="M5 17h6l2.5-6 4 11 2.5-5H27" />
+    </symbol>
+    <symbol id="i-nutrition" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+      <circle cx="16" cy="16" r="13" /><path d="M16 3v26M16 16 25.2 6.8" /><circle cx="16" cy="16" r="5" />
+    </symbol>
+    <symbol id="i-sleep" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+      <path d="M21 4.5A12.5 12.5 0 1 0 27.5 21 10 10 0 0 1 21 4.5Z" /><path d="M22 12h5l-5 6h5" />
+    </symbol>
+    <symbol id="i-caffeine" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+      <path d="M5 12h18v9a7 7 0 0 1-7 7h-4a7 7 0 0 1-7-7v-9Z" /><path d="M23 14h2.5a3.5 3.5 0 0 1 0 7H23" /><path d="M10 3v5M14 3v5M18 3v5" />
+    </symbol>
+    <symbol id="i-recovery" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+      <path d="M4 22a12 12 0 0 1 24 0" /><path d="M9 22a7 7 0 0 1 14 0" /><path d="M14 22a2 2 0 0 1 4 0" /><path d="M2 26h28" />
+    </symbol>
+    <symbol id="i-supplements" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4">
+      <rect x="4" y="11" width="24" height="10" rx="5" transform="rotate(-35 16 16)" /><path d="M13.1 11.9l5.8 8.2" /><circle cx="25" cy="25" r="3" />
+    </symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Baseline home">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="26" height="26" /><circle cx="14" cy="14" r="8" /><path d="M1 22h26" /></svg>
+      <span>Baseline</span>
+    </a>
+    <ul>
+      <li><a href="#method">Method</a></li>
+      <li><a href="#assessment">Assessment</a></li>
+      <li><a href="#dashboard">Dashboard</a></li>
+      <li><a href="#pricing">Membership</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a class="btn" href="#begin">Book assessment</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Doctor-led performance medicine</p>
+        <h1>Your body, run like the rest of your life.</h1>
+        <p class="lead">One physician managing your training, nutrition, sleep, caffeine, recovery and supplements as one plan. Measured from bloodwork, tracked daily, adjusted every month.</p>
+        <div class="ctas">
+          <a class="btn" href="#begin">Book a baseline assessment</a>
+          <a class="btn ghost" href="dashboard.html">See the dashboard</a>
+        </div>
+      </div>
+      <svg class="hero-art" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+        <rect x="20" y="20" width="360" height="360" stroke="#0b0b0b" stroke-opacity=".18" />
+        <path d="M20 200h360M200 20v360" stroke="#0b0b0b" stroke-opacity=".12" />
+        <circle cx="200" cy="200" r="150" stroke="#0b0b0b" stroke-opacity=".25" />
+        <circle cx="200" cy="200" r="104" stroke="#0b0b0b" stroke-opacity=".4" />
+        <circle cx="200" cy="200" r="58" fill="#1b1b1a" />
+        <path d="M200 50a150 150 0 0 1 141 99" stroke="#0b0b0b" stroke-width="4" />
+        <path d="M200 96a104 104 0 0 1 90 156" stroke="#a8916a" stroke-width="4" />
+        <path d="M20 380 380 20" stroke="#0b0b0b" stroke-opacity=".12" />
+        <rect x="292" y="292" width="88" height="88" fill="#0b0b0b" />
+        <rect x="20" y="20" width="44" height="44" fill="#a8916a" />
+        <circle cx="341" cy="149" r="6" fill="#0b0b0b" />
+        <circle cx="290" cy="252" r="6" fill="#a8916a" />
+        <path d="M176 200h12l6-14 10 28 6-14h14" stroke="#f1ece2" stroke-width="2" />
+      </svg>
+    </div>
+    <div class="wrap">
+      <div class="hero-meta">
+        <div><b>7</b><span>areas managed together</span></div>
+        <div><b>1</b><span>doctor, who knows your whole file</span></div>
+        <div><b>12 wk</b><span>to your first retest</span></div>
+        <div><b>&lt;30 min</b><span>of your time a week</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Domains -->
+  <section class="dark domains" aria-label="What we manage">
+    <div class="wrap">
+      <ul>
+        <li><svg><use href="#i-strength" /></svg><b>Strength</b><small>Programmed lifting, progression tracked by lift</small></li>
+        <li><svg><use href="#i-cardio" /></svg><b>Cardio</b><small>Zone 2 base, VO₂ max work, 80/20 balance</small></li>
+        <li><svg><use href="#i-nutrition" /></svg><b>Nutrition</b><small>Protein, body composition, alcohol</small></li>
+        <li><svg><use href="#i-sleep" /></svg><b>Sleep</b><small>Duration, timing, consistency</small></li>
+        <li><svg><use href="#i-caffeine" /></svg><b>Caffeine</b><small>Dose and cut-off, matched to your sleep</small></li>
+        <li><svg><use href="#i-recovery" /></svg><b>Recovery</b><small>HRV, resting HR, load, rest days</small></li>
+        <li><svg><use href="#i-supplements" /></svg><b>Supplements</b><small>Only what your bloodwork and the evidence support</small></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Method -->
+  <section id="method">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Method</p>
+          <h2>Measure. Design. Track. Adjust.</h2>
+        </div>
+        <p>Your GP, trainer, dietitian and wearable app each see part of the picture. Here one doctor sees all of it and decides what matters most for you this month.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <span class="num">01</span>
+          <svg viewBox="0 0 56 56" fill="none" stroke="#0b0b0b" stroke-width="1.4"><circle cx="28" cy="28" r="26" /><circle cx="28" cy="28" r="14" /><path d="M28 2v12M28 42v12M2 28h12M42 28h12" /></svg>
+          <h3>Measure</h3>
+          <p>Bloodwork, body composition, blood pressure and your wearable history give an objective baseline before anything changes.</p>
+        </div>
+        <div class="step">
+          <span class="num">02</span>
+          <svg viewBox="0 0 56 56" fill="none" stroke="#0b0b0b" stroke-width="1.4"><rect x="2" y="2" width="52" height="52" /><path d="M2 20h52M2 38h52M20 2v52M38 2v52" /><rect x="20" y="20" width="18" height="18" fill="#0b0b0b" /></svg>
+          <h3>Design</h3>
+          <p>A written 12-week protocol built around your calendar, travel and goals: training, nutrition targets, sleep window, caffeine plan, supplements.</p>
+        </div>
+        <div class="step">
+          <span class="num">03</span>
+          <svg viewBox="0 0 56 56" fill="none" stroke="#0b0b0b" stroke-width="1.4"><path d="M2 54h52" /><rect x="6" y="34" width="8" height="20" /><rect x="20" y="24" width="8" height="30" /><rect x="34" y="14" width="8" height="40" fill="#0b0b0b" /><path d="M4 30 24 16l14 6L54 4" /></svg>
+          <h3>Track</h3>
+          <p>A personal dashboard that pulls in your wearable data. Logging caffeine, protein and supplements takes about ten seconds a day.</p>
+        </div>
+        <div class="step">
+          <span class="num">04</span>
+          <svg viewBox="0 0 56 56" fill="none" stroke="#0b0b0b" stroke-width="1.4"><path d="M50 28A22 22 0 1 1 41 10.3" /><path d="M42 2v9h-9" /><circle cx="28" cy="28" r="5" fill="#0b0b0b" /></svg>
+          <h3>Adjust</h3>
+          <p>Regular reviews with your doctor and retesting at 12 weeks. The plan changes when your data or your life does.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Assessment -->
+  <section id="assessment" class="dark">
+    <div class="wrap assess">
+      <div>
+        <p class="eyebrow">Start here</p>
+        <h2>The Baseline Assessment</h2>
+        <p class="lead" style="margin-top:22px">Every client starts with a full medical baseline. You get a clear picture of where you are and a plan for the next 12 weeks, whether or not you continue with a membership.</p>
+        <div class="price-line"><b>R14,500</b><span>once-off · laboratory fees at cost</span></div>
+        <div style="margin-top:32px"><a class="btn" href="#begin">Book an assessment</a></div>
+      </div>
+      <ul class="checklist">
+        <li><span class="k">01</span><div><b>90-minute consultation</b><small>Medical history, goals, training, sleep, diet, caffeine, alcohol, medication and supplements.</small></div></li>
+        <li><span class="k">02</span><div><b>Baseline bloodwork</b><small>Blood count, kidney and liver function, ApoB and Lp(a), HbA1c and insulin, hs-CRP, thyroid, iron, vitamin D and B12, with hormones where indicated.</small></div></li>
+        <li><span class="k">03</span><div><b>Body and fitness measures</b><small>Blood pressure, waist and body composition. DEXA and VO₂ max testing are available through partner facilities.</small></div></li>
+        <li><span class="k">04</span><div><b>Dashboard setup</b><small>We connect your Garmin, Whoop, Oura or Apple Watch and choose the measures that matter for your goals.</small></div></li>
+        <li><span class="k">05</span><div><b>Results review and written protocol</b><small>A 45-minute review of your results, then a 12-week plan you can follow on your busiest weeks.</small></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard">
+    <div class="wrap dash-preview">
+      <div>
+        <p class="eyebrow">Your dashboard</p>
+        <h2>Everything in one place, and nothing you don't need.</h2>
+        <p class="lead">Your doctor picks the measures on your dashboard to match your goals, and adds or removes them as the plan changes.</p>
+        <ul>
+          <li>Readiness and HRV</li><li>Sleep and bedtime</li>
+          <li>Caffeine cut-off</li><li>Zone 2 minutes</li>
+          <li>Key lifts</li><li>Protein target</li>
+          <li>Supplement protocol</li><li>Bloodwork trends</li>
+        </ul>
+        <a class="btn ghost" href="dashboard.html">Open the demo dashboard</a>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="tile"><small>Readiness</small><b>82</b>
+          <svg viewBox="0 0 100 38"><circle cx="19" cy="19" r="16" stroke="#33322f" stroke-width="4" fill="none"/><path d="M19 3a16 16 0 1 1-15.2 21" stroke="#a8916a" stroke-width="4" fill="none"/></svg></div>
+        <div class="tile wide"><small>HRV · 30 days</small>
+          <svg viewBox="0 0 200 38" preserveAspectRatio="none"><path d="M0 26 14 22 28 25 42 18 56 20 70 15 84 19 98 13 112 16 126 11 140 14 154 9 168 12 182 7 200 9" stroke="#f1ece2" stroke-width="1.6" fill="none"/><path d="M0 20h200" stroke="#a8916a" stroke-dasharray="3 4"/></svg></div>
+        <div class="tile wide"><small>Sleep · 14 nights</small>
+          <svg viewBox="0 0 200 38" preserveAspectRatio="none"><g fill="#f1ece2"><rect x="2" y="10" width="9" height="28"/><rect x="16" y="14" width="9" height="24"/><rect x="30" y="8" width="9" height="30"/><rect x="44" y="18" width="9" height="20"/><rect x="58" y="9" width="9" height="29"/><rect x="72" y="11" width="9" height="27"/><rect x="86" y="7" width="9" height="31"/><rect x="100" y="12" width="9" height="26"/><rect x="114" y="9" width="9" height="29"/><rect x="128" y="6" width="9" height="32"/><rect x="142" y="10" width="9" height="28"/><rect x="156" y="8" width="9" height="30"/><rect x="170" y="7" width="9" height="31"/><rect x="184" y="9" width="9" height="29"/></g><path d="M0 9h200" stroke="#a8916a" stroke-dasharray="3 4"/></svg></div>
+        <div class="tile"><small>Last caffeine</small><b>12:40</b></div>
+        <div class="tile"><small>Zone 2 · week</small><b>164<span style="font-size:13px"> min</span></b></div>
+        <div class="tile"><small>Protein</small><b>1.8<span style="font-size:13px"> g/kg</span></b></div>
+        <div class="tile"><small>ApoB</small><b>0.82</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Audience -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Who it's for</p>
+          <h2>Built for people whose time is the constraint.</h2>
+        </div>
+        <p>Plans are built around board meetings, call rosters and long-haul flights. A plan you can't follow on your busiest week doesn't help.</p>
+      </div>
+      <div class="audience">
+        <div>
+          <svg viewBox="0 0 40 40" fill="none" stroke="#0b0b0b" stroke-width="1.4"><rect x="1" y="1" width="38" height="38" /><rect x="11" y="11" width="18" height="18" fill="#0b0b0b" /></svg>
+          <h3>Executives and founders</h3>
+          <p>Energy and focus across long weeks, travel and jet lag, stress, and long-term cardiovascular risk.</p>
+        </div>
+        <div>
+          <svg viewBox="0 0 40 40" fill="none" stroke="#0b0b0b" stroke-width="1.4"><circle cx="20" cy="20" r="19" /><path d="M20 8v24M8 20h24" stroke-width="3" /></svg>
+          <h3>Doctors and specialists</h3>
+          <p>Planning around shifts and calls with a colleague who speaks your language and reads the evidence critically.</p>
+        </div>
+        <div>
+          <svg viewBox="0 0 40 40" fill="none" stroke="#0b0b0b" stroke-width="1.4"><path d="M20 1 39 39H1Z" /><path d="M20 15 29 33H11Z" fill="#0b0b0b" /></svg>
+          <h3>Ambitious amateurs</h3>
+          <p>A marathon, an Ironman or a first strength goal, without letting it take over work or family time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="dark">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Membership</p>
+          <h2>Continuous care after your assessment.</h2>
+        </div>
+        <p>Monthly membership with a three-month minimum. Annual memberships get two months free. Executive places are limited so every client gets proper attention.</p>
+      </div>
+      <div class="tiers">
+        <div class="tier">
+          <span class="name">Essential</span>
+          <div class="amt"><b>R4,500</b><span>/ month</span></div>
+          <p class="for">A doctor-made plan and monthly review, for people who want structure.</p>
+          <ul>
+            <li>Monthly 30-minute review</li>
+            <li>Personal dashboard</li>
+            <li>Quarterly protocol update</li>
+            <li>Training and nutrition targets</li>
+            <li>Messaging, 48-hour response</li>
+            <li>Annual bloodwork review</li>
+          </ul>
+          <a class="btn ghost" href="#begin">Enquire</a>
+        </div>
+        <div class="tier featured">
+          <span class="name">Performance</span>
+          <div class="amt"><b>R9,500</b><span>/ month</span></div>
+          <p class="for">Closer coaching, with a written programme and a doctor checking your data every week.</p>
+          <ul>
+            <li>Review every two weeks</li>
+            <li>Weekly dashboard check by your doctor</li>
+            <li>Written gym and cardio programme</li>
+            <li>Nutrition targets and meal framework</li>
+            <li>Messaging, 24-hour response</li>
+            <li>Bloodwork every 6 months · yearly VO₂ max</li>
+          </ul>
+          <a class="btn" href="#begin">Enquire</a>
+        </div>
+        <div class="tier">
+          <span class="name">Executive</span>
+          <div class="amt"><b>R22,000</b><span>/ month</span></div>
+          <p class="for">Fully managed, for people with the least time and the most at stake.</p>
+          <ul>
+            <li>Weekly review, at your office or online</li>
+            <li>Same-day messaging</li>
+            <li>We work with your trainer, dietitian and specialists</li>
+            <li>Travel and jet-lag protocols</li>
+            <li>Quarterly bloodwork, drawn at home</li>
+            <li>Yearly DEXA and VO₂ max</li>
+          </ul>
+          <a class="btn ghost" href="#begin">Enquire</a>
+        </div>
+      </div>
+      <p class="price-note">All prices include VAT where applicable. Laboratory and imaging fees are charged at cost unless included in your membership. This is a private service; most of it is not claimable from medical aid. Team packages for companies are available on request.</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Questions</p>
+          <h2>Good to know</h2>
+        </div>
+        <p>Anything else? Ask when you book. The first call is free and lasts 15 minutes.</p>
+      </div>
+      <div class="faq">
+        <details><summary>Does this replace my GP?</summary><p>No. It complements your GP. With your consent, we share relevant results with your GP, and anything outside our scope is referred on.</p></details>
+        <details><summary>Do I need a wearable?</summary><p>It helps, but you don't need one to start. We work with Garmin, Whoop, Oura, Apple Watch and Polar. Without one, the dashboard uses your bloodwork, check-ins and training log.</p></details>
+        <details><summary>Will you put me on lots of supplements?</summary><p>Usually only a few. We recommend supplements only where your bloodwork or good evidence supports them, from third-party-tested brands, and we don't sell them.</p></details>
+        <details><summary>How much time does it take each week?</summary><p>About ten seconds a day to log caffeine, protein and supplements, plus your review call. The training itself fits around your diary.</p></details>
+        <details><summary>Who sees my data?</summary><p>Only you and your doctor. Health data is handled under POPIA, and for company packages your employer never sees your medical information.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="begin" class="dark cta">
+    <svg class="cta-art" viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice" fill="none" aria-hidden="true">
+      <circle cx="600" cy="250" r="230" stroke="#f1ece2" stroke-opacity=".08" />
+      <circle cx="600" cy="250" r="160" stroke="#f1ece2" stroke-opacity=".1" />
+      <path d="M0 250h1200" stroke="#f1ece2" stroke-opacity=".06" />
+      <rect x="80" y="70" width="90" height="90" stroke="#a8916a" stroke-opacity=".5" />
+      <rect x="1030" y="340" width="90" height="90" fill="#a8916a" fill-opacity=".25" />
+    </svg>
+    <div class="wrap">
+      <p class="eyebrow">Begin</p>
+      <h2>Start with your baseline.</h2>
+      <p class="sub">Book a free 15-minute call to see if it suits you. If it does, we schedule your assessment and bloodwork within the week.</p>
+      <a class="btn" href="mailto:hello@example.com?subject=Baseline%20assessment">Book a free call</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="brand" href="#top">
+        <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="26" height="26" /><circle cx="14" cy="14" r="8" /><path d="M1 22h26" /></svg>
+        <span>Baseline</span>
+      </a>
+      <p>Dr [Your name], MBChB · HPCSA MP [number] · Practice no. [number]</p>
+    </div>
+    <nav>
+      <a href="#method">Method</a><a href="#assessment">Assessment</a><a href="#pricing">Membership</a><a href="dashboard.html">Dashboard demo</a><a href="#">Privacy (POPIA)</a>
+    </nav>
+    <p class="disclaimer">Baseline provides private medical consultation focused on lifestyle and performance. It is not an emergency service. If you have chest pain, shortness of breath or other urgent symptoms, contact emergency services or your nearest emergency unit. Individual results vary.</p>
+  </div>
+</footer>
+</body>
+</html>

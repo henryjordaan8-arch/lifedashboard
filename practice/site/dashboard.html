@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Baseline Client Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Jost:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="index.html" aria-label="Baseline website">
+      <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="26" height="26" /><circle cx="14" cy="14" r="8" /><path d="M1 22h26" /></svg>
+      <span>Baseline</span>
+    </a>
+    <div class="top-mid">
+      <label class="client-pick">
+        <span>Client</span>
+        <select id="client"></select>
+      </label>
+    </div>
+    <div class="top-right">
+      <span class="demo-tag">Demo data</span>
+      <button id="open-config" class="btn">Configure</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <div>
+        <p class="eyebrow" id="today"></p>
+        <h1 id="greeting"></h1>
+      </div>
+      <p class="intro-note" id="intro-note"></p>
+    </section>
+    <div id="dash"></div>
+    <p class="empty" id="empty" hidden>No modules switched on for this client. Open <b>Configure</b> to choose some.</p>
+  </main>
+
+  <!-- Config drawer (doctor view) -->
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Configure dashboard">
+    <div class="drawer-head">
+      <div>
+        <p class="eyebrow">Doctor view</p>
+        <h2>Configure dashboard</h2>
+      </div>
+      <button id="close-config" class="icon-btn" aria-label="Close">×</button>
+    </div>
+    <div class="drawer-body">
+      <h3>Start from a preset</h3>
+      <div class="presets" id="presets"></div>
+
+      <h3>Modules <span class="count" id="count"></span></h3>
+      <div id="module-list"></div>
+
+      <h3>Targets for this client</h3>
+      <div class="targets" id="targets"></div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn ghost" id="reset">Reset client</button>
+      <button class="btn" id="done">Done</button>
+    </div>
+  </aside>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

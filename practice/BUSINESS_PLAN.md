@@ -276,6 +276,9 @@ monitoring.
 
 ## 6. Launch checklist
 
+> See [`OPERATIONS.md`](OPERATIONS.md) for international clients, structure, payments,
+> bookings, legal risk and partnerships.
+
 1. **Name and company:** pick a name, register the company, and confirm your indemnity
    cover includes telehealth and this scope of work.
 2. **Lab account:** open an account with a pathology group with branches nationwide,

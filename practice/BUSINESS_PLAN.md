@@ -44,6 +44,11 @@ Keep the claims modest and measurable ("more zone 2 minutes", "consistent bedtim
 
 ## 2. Pricing (suggestions)
 
+> **Updated:** see [`PRICING_RESEARCH.md`](PRICING_RESEARCH.md) for competitors, a
+> viability assessment and **revised, lower recommended prices** (Assessment R8,500,
+> Essential R3,500, Performance R7,500, Executive R15,000, plus a R1,500 Maintenance tier).
+> The figures below are the first draft, kept for comparison.
+
 Pricing is shown in **ZAR**, with approximate **USD** for international clients (≈ R18 / $).
 Being online means you can take clients from anywhere you're allowed to advise, so a USD
 price list is worth having. These are starting points to test, not market research.
@@ -221,6 +226,40 @@ in and works without a computer, and the client prototype follows the same idea.
   nothing is copied to you.
 - **Backups:** an encrypted export file the client keeps (e.g. in their own iCloud or
   Google Drive), so a new phone doesn't lose their history.
+
+### Data sources: plan for change
+
+Wearable companies change what they share, and any of them could restrict or block
+third-party access at any time. Your personal dashboard already depends on an unofficial
+Garmin route that could stop working tomorrow. The client app should therefore **never
+depend on one source**:
+
+- **Each module reads from the best source available, with a fallback.** For example:
+  - sleep: Garmin → Health Connect / Apple Health → Oura or Whoop → manual entry
+  - HRV: same order, or hidden if no source has it
+- **Sources the app should support, in priority order:**
+  1. Health Connect (Android) and Apple Health (iOS). Garmin, Oura, Whoop, Polar,
+     Samsung, Fitbit, Withings scales and most others write to these.
+  2. Direct connections where a vendor offers an official one (e.g. Oura and Whoop
+     have official developer APIs).
+  3. Garmin's official programme, if it accepts you.
+  4. Manual entry and file import as a last resort.
+- **Expect gaps.** Garmin shares only a limited set of data with Health Connect, and Body
+  Battery isn't included. If a source drops a metric, the module either switches source,
+  falls back to a simpler version, or is hidden, and you adjust the protocol to match.
+
+**Tell clients this up front.** It goes in the consent form, the onboarding call and the
+website FAQ:
+
+> *If Garmin or another provider changes or blocks access to your data, we adjust your
+> dashboard to use another source, such as Health Connect, Apple Health, another device or
+> manual entry. Some measures may change or pause while we do. We set up your dashboard
+> with you on a video call and keep adjusting it until it works with your devices.*
+
+**Setup is done together.** At the assessment, you set up the app with the client on Zoom
+(screen share), connect their devices, check each module shows data, and switch off
+anything their devices can't supply. If something breaks later, fixing it is part of the
+next call. This is a service promise, not a technical guarantee.
 
 **Trade-off to accept:** you can't look at a client's data between calls. That's the price
 of holding no health data, and it's why the tiers differ in call frequency rather than

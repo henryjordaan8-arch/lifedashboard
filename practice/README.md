@@ -4,6 +4,7 @@ Everything for the optimisation business, kept apart from the personal dashboard
 
 | File | What it is |
 |---|---|
+| [`PRICING_RESEARCH.md`](PRICING_RESEARCH.md) | Competitors (South Africa and international), whether the niche is viable, and recommended prices, with sources |
 | [`BUSINESS_PLAN.md`](BUSINESS_PLAN.md) | Positioning, **pricing suggestions**, **bloodwork panel**, the **dashboard parameter list** by tier, how to turn the personal dashboard into a client product, a launch checklist and regulatory notes |
 | [`site/index.html`](site/index.html) | The website: carbon, cream and black, geometric |
 | [`site/dashboard.html`](site/dashboard.html) | Client dashboard prototype with demo data. **Configure** (top right) switches modules on and off, applies presets, and sets targets, the monthly focus and dates. **Copy protocol code** and **Import** pass that set-up to the client's own device; the code never contains health data |

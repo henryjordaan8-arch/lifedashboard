@@ -1,4 +1,4 @@
-# Baseline: the practice
+# Optimised: the practice
 
 Everything for the optimisation business, kept apart from the personal dashboard.
 
@@ -21,7 +21,7 @@ cd practice/site && python3 -m http.server 8080
 
 ## Changing things
 
-- **Name:** "Baseline" is a working name. Search and replace it in `site/`.
+- **Name:** Optimised. The brand appears in the logo, page titles, footer and the `BRAND` constant in `site/dashboard.js`. The "Baseline Assessment" is the name of the entry product.
 - **Prices:** in the Pricing and Assessment sections of `site/index.html`.
 - **Dashboard modules:** each card is an entry in `MODULES` in `site/dashboard.js`. Presets
   are in `PRESETS` and default targets in `DEFAULT_TARGETS`. Everything is saved on the

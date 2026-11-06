@@ -1,4 +1,4 @@
-/* Baseline client dashboard: prototype with demo data.
+/* Optimised client dashboard: prototype with demo data.
  *
  * The app runs on the client's own device and reads their wearable there, so no
  * server ever holds their health data. Blood results are never shown in the app;
@@ -12,8 +12,8 @@
 (() => {
   "use strict";
 
-  const BRAND = "Baseline";
-  const STORE_KEY = "baseline.dashboard.v1";
+  const BRAND = "Optimised";
+  const STORE_KEY = "optimised.dashboard.v1";
 
   // ---------- Demo data (seeded so it looks the same on every load) ----------
   let seed = 7;
@@ -437,7 +437,7 @@
       const p = Math.round((s.taken / 7) * 100), cls = p >= 85 ? "good" : p >= 60 ? "warn" : "bad";
       return `<tr><td><b style="font-weight:500">${esc(s.name)}</b><br><span class="muted">${esc(s.why)}</span></td><td>${esc(s.dose)}</td><td>${esc(s.when)}</td><td><span class="pill" title="Evidence grade">${esc(s.grade)}</span></td><td class="num ${cls}">${s.taken}/7</td></tr>`;
     }).join("");
-    return card(m, `<div class="table-scroll"><table><thead><tr><th>Supplement</th><th>Dose</th><th>When</th><th>Evidence</th><th class="num">Taken</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Evidence: A strong · B moderate · C trial, review at your next call. Third-party-tested brands only. Baseline never sells supplements.</p>`);
+    return card(m, `<div class="table-scroll"><table><thead><tr><th>Supplement</th><th>Dose</th><th>When</th><th>Evidence</th><th class="num">Taken</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Evidence: A strong · B moderate · C trial, review at your next call. Third-party-tested brands only. Optimised never sells supplements.</p>`);
   }
 
   // ---------- Page ----------

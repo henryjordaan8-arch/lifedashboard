@@ -1,4 +1,4 @@
-/* Baseline: carbon, cream, black, geometric */
+/* Optimised: carbon, cream, black, geometric */
 :root {
   --cream: #f1ece2;
   --cream-2: #e7e0d2;
@@ -274,3 +274,10 @@ footer nav a:hover { color: var(--cream); }
   .portrait { max-width: 320px; }
 }
 @media (max-width: 480px) { .creds { grid-template-columns: 1fr; } }
+
+/* Small phones: keep logo and button on one line */
+.nav .btn { white-space: nowrap; }
+@media (max-width: 480px) {
+  .brand span { letter-spacing: 0.2em; font-size: 15px; }
+  .nav .btn { padding: 9px 12px; font-size: 11px; letter-spacing: 0.08em; }
+}

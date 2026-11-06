@@ -27,7 +27,7 @@ section ends with the questions to put to a lawyer, accountant or your indemnity
 | Stage | Who | What you offer |
 |---|---|---|
 | **1. Launch** | People living in South Africa, including South Africans travelling for work | Full service: assessment, bloods, membership |
-| **2. After 6–12 months** | South Africans abroad and other international clients | **Baseline Coaching**, a separate *non-medical* product: training, sleep, caffeine, nutrition habits, the dashboard and Zoom check-ins. No bloodwork, diagnosis or prescriptions; their own doctor handles anything medical. Separate terms, priced in USD |
+| **2. After 6–12 months** | South Africans abroad and other international clients | **Optimised Coaching**, a separate *non-medical* product: training, sleep, caffeine, nutrition habits, the dashboard and Zoom check-ins. No bloodwork, diagnosis or prescriptions; their own doctor handles anything medical. Separate terms, priced in USD |
 | **3. If demand justifies it** | One chosen country (e.g. the UK) | Register there (e.g. GMC licence plus UK indemnity) and offer the full service in that country |
 
 **Stage 2 risk:** a doctor giving health advice can still be seen as practising medicine,
@@ -156,7 +156,7 @@ service as the top step:
 
 | Layer | For Planet Fitness members | Price idea |
 |---|---|---|
-| Baseline app + programme | Dashboard, training blocks, sleep and caffeine programmes, monthly group webinars run by you | R149–299 / month, or bundled into a premium club membership |
+| Optimised app + programme | Dashboard, training blocks, sleep and caffeine programmes, monthly group webinars run by you | R149–299 / month, or bundled into a premium club membership |
 | Group sessions | In-club or online talks: sleep, zone 2, nutrition for training | Fee paid by Planet Fitness |
 | Staff training | Teach trainers the method and when to refer | Fee paid by Planet Fitness |
 | Upgrade path | Members who want a doctor book the Baseline Assessment (discount allowed) | Your normal rates |

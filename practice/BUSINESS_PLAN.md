@@ -1,7 +1,6 @@
-# Baseline: business plan (draft)
+# Optimised: business plan (draft)
 
-> **Baseline** is a working name. Change it in `site/index.html`, `site/dashboard.html`
-> and the `BRAND` constant in `site/dashboard.js`.
+> **Optimised** is the brand. The **Baseline Assessment** is the entry product.
 
 A doctor-led optimisation service for busy, high-earning people: executives, founders,
 specialists, other doctors. One physician advises on strength training, cardio,

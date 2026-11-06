@@ -277,6 +277,12 @@ monitoring.
 
 ## 6. Launch checklist
 
+**Before anything else:** you can't see paying clients until both are in place.
+- **HPCSA registration (MP number):** applied for, awaiting.
+- **Practice number:** apply to the BHF (Board of Healthcare Funders) once you have your MP
+  number. Labs need it on request forms, and invoices need it.
+- Then add both numbers to the website footer and the "Your doctor" section.
+
 > See [`OPERATIONS.md`](OPERATIONS.md) for international clients, structure, payments,
 > bookings, legal risk and partnerships.
 
